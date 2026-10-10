@@ -6008,16 +6008,13 @@ fn emit_line(
     // The first line carries the hanging or first-line shift.
     let has_hanging = geom.hanging > 0.0;
     let has_first_line = geom.first_line > 0.0;
-    let overrun = if geom.is_first_line
-        && geom.has_list_marker
-        && geom.indent_left > 0.0
-        && has_hanging
-        && !geom.is_rtl
-    {
+    let marker_offset = if geom.is_first_line && geom.has_list_marker && !geom.is_rtl {
         line.marker_tab_offset.unwrap_or(0.0)
     } else {
         0.0
     };
+    let overrun = if has_hanging { marker_offset } else { 0.0 };
+    let inline_marker_shift = if has_hanging { 0.0 } else { marker_offset };
     let mut pad_left = geom.indent_left;
     let mut text_indent = 0.0;
     if geom.is_first_line {
@@ -6028,12 +6025,14 @@ fn emit_line(
             } else {
                 -geom.hanging
             };
-        } else if has_first_line {
-            text_indent = geom.first_line;
         } else if geom.has_list_marker && has_hanging {
             // no left indent: the marker fills [0, hanging] and body text
-            // follows at the hang (matches the body-line branch below)
-            text_indent = geom.hanging;
+            // follows at the hang (plus any overrun past that slot)
+            text_indent = geom.hanging + overrun;
+        } else if has_first_line {
+            text_indent = geom.first_line + inline_marker_shift;
+        } else if geom.has_list_marker {
+            text_indent = inline_marker_shift;
         }
     } else if geom.indent_left <= 0.0 && has_hanging {
         pad_left = geom.hanging;
@@ -6148,10 +6147,14 @@ fn emit_line(
         });
         marker_format.font_size =
             attrs.and_then(|attrs| attrs.list_marker_font_size.or(attrs.default_font_size));
-        let slot_width = if overrun > 0.0 {
-            geom.hanging + overrun
+        let slot_width = if has_hanging {
+            if overrun > 0.0 {
+                geom.hanging + overrun
+            } else {
+                geom.hanging.max(font_px_of(&marker_format))
+            }
         } else {
-            geom.hanging.max(font_px_of(&marker_format))
+            inline_marker_shift.max(font_px_of(&marker_format))
         };
         let marker_x = if geom.is_rtl {
             pen_x + effective_line_width

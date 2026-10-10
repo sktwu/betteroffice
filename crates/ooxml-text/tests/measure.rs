@@ -1750,13 +1750,14 @@ fn list_marker_font_and_zero_width_paths() {
     let hidden = json!({ "listMarker": "00000000", "listMarkerHidden": true });
     assert_eq!(marker_lines(hidden, TEXT_00_00), 1);
 
-    // Nonzero hanging removes the marker footprint and font lookup.
+    // Nonzero hanging removes the inline marker footprint; a marker that fits
+    // the hang slot does not emit markerTabOffset.
     let hanging = json!({
         "listMarker": "1.",
-        "listMarkerFontFamily": "Nope",
-        "indent": { "hanging": 12.0 }
+        "listMarkerFontFamily": "Liberation Sans",
+        "indent": { "left": 48.0, "hanging": 48.0 }
     });
-    measure_with(
+    let measured = measure_with(
         json!({
             "kind": "paragraph",
             "runs": [{ "kind": "text", "text": "abc" }],
@@ -1764,7 +1765,8 @@ fn list_marker_font_and_zero_width_paths() {
         }),
         200.0,
     )
-    .expect("hanging-indent marker skips marker-font resolution");
+    .expect("hanging-indent marker that fits keeps body at the indent");
+    assert!(measured["lines"][0].get("markerTabOffset").is_none());
 
     // the empty-paragraph path returns before marker resolution too
     measure_with(
@@ -2011,19 +2013,15 @@ fn list_marker_tab_overrun_shifts_only_first_line_tab_positions() {
     assert!(measured["lines"][1].get("markerTabOffset").is_none());
 }
 
-/// Excluded marker and indent cases preserve their measurement and font lookup behavior.
+/// Cases that still skip overrun keep their measurement and font lookup behavior.
 #[test]
 fn list_marker_tab_overrun_leaves_other_cases_unchanged() {
     for excluded in [
         json!({ "bidi": true }),
-        json!({ "listMarkerSuffix": "space" }),
-        json!({ "listMarkerSuffix": "nothing" }),
         json!({ "listMarkerSuffix": "unknown" }),
         json!({ "listMarkerHidden": true }),
         json!({ "listMarker": "" }),
         json!({ "listMarker": null }),
-        json!({ "indent": { "left": 0.0, "hanging": 113.4 } }),
-        json!({ "indent": { "left": -24.0, "hanging": 113.4 } }),
         json!({ "indent": { "left": 113.4, "hanging": 150.0 } }),
     ] {
         let mut attrs = overrun_marker_attrs();
@@ -2048,20 +2046,100 @@ fn list_marker_tab_overrun_leaves_other_cases_unchanged() {
             "excluded case keeps its text width",
         );
     }
-    for hanging in [0.0, -12.0] {
+    // Negative hanging is not an inline-marker path and does not overrun.
+    let mut attrs = overrun_marker_attrs();
+    attrs["indent"]["hanging"] = json!(-12.0);
+    let measured = measure_with(
+        json!({
+            "kind": "paragraph",
+            "runs": [{ "kind": "text", "text": "00 00" }],
+            "attrs": attrs
+        }),
+        500.0,
+    )
+    .unwrap();
+    assert!(measured["lines"][0].get("markerTabOffset").is_none());
+}
+
+/// `space` / `nothing` suffixes push the body past a marker wider than the hang.
+#[test]
+fn list_marker_space_and_nothing_overrun_the_hanging_slot() {
+    let left = 113.4;
+    let natural_width = marker_natural_width(&json!("1.2.3.4.5.6.7.8.9"));
+    assert!(natural_width > left);
+    let offset = |suffix: &str| {
         let mut attrs = overrun_marker_attrs();
-        attrs["indent"]["hanging"] = json!(hanging);
+        attrs["listMarkerSuffix"] = json!(suffix);
+        measure_with(
+            json!({
+                "kind": "paragraph",
+                "runs": [{ "kind": "text", "text": "item" }],
+                "attrs": attrs
+            }),
+            400.0,
+        )
+        .unwrap()["lines"][0]["markerTabOffset"]
+            .as_f64()
+            .unwrap()
+    };
+    let nothing = offset("nothing");
+    let space = offset("space");
+    approx(nothing, natural_width - left, "nothing places body at marker end");
+    assert!(
+        space > nothing,
+        "space suffix adds a glyph past the marker ({space} > {nothing})"
+    );
+}
+
+/// With no positive left indent, the body edge is the hanging indent.
+#[test]
+fn list_marker_overrun_uses_hanging_as_body_edge_when_left_is_zero() {
+    let hanging = 113.4;
+    let natural_width = marker_natural_width(&json!("1.2.3.4.5.6.7.8.9"));
+    assert!(natural_width > hanging);
+    let grid_interval = 709.0 / 1440.0 * 96.0;
+    let body_start = ((natural_width / grid_interval).floor() + 1.0) * grid_interval;
+    for left in [0.0, -24.0] {
+        let mut attrs = overrun_marker_attrs();
+        attrs["indent"] = json!({ "left": left, "hanging": hanging });
         let measured = measure_with(
             json!({
                 "kind": "paragraph",
-                "runs": [{ "kind": "text", "text": "00 00" }],
+                "runs": [{ "kind": "text", "text": "item" }],
                 "attrs": attrs
             }),
-            500.0,
+            400.0,
         )
         .unwrap();
-        assert!(measured["lines"][0].get("markerTabOffset").is_none());
+        approx(
+            measured["lines"][0]["markerTabOffset"].as_f64().unwrap(),
+            body_start - hanging,
+            "left<=0 body edge is hanging",
+        );
     }
+}
+
+/// Zero hanging reports the marker's inline footprint as `markerTabOffset`.
+#[test]
+fn list_marker_zero_hanging_reports_inline_footprint_as_marker_tab_offset() {
+    let mut attrs = overrun_marker_attrs();
+    attrs["indent"] = json!({ "left": 0.0, "hanging": 0.0 });
+    attrs["listMarkerSuffix"] = json!("nothing");
+    let natural_width = marker_natural_width(&attrs["listMarker"]);
+    let measured = measure_with(
+        json!({
+            "kind": "paragraph",
+            "runs": [{ "kind": "text", "text": "title" }],
+            "attrs": attrs
+        }),
+        500.0,
+    )
+    .unwrap();
+    approx(
+        measured["lines"][0]["markerTabOffset"].as_f64().unwrap(),
+        natural_width,
+        "zero hanging inline footprint",
+    );
 }
 
 // ---- inline images ------------------------------------------------------

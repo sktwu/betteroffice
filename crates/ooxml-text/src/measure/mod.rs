@@ -190,7 +190,8 @@ pub struct TypesetRowOut {
     /// floats; painters render it as top margin, `totalHeight` includes it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub float_skip_before: Option<f32>,
-    /// Extra first-line px after a marker overruns its hanging indent.
+    /// Extra first-line body shift from a visible list marker (hanging overrun
+    /// or the inline footprint when hanging is zero).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub marker_tab_offset: Option<f32>,
     /// Exact advances for run slices, emitted in visual paint order.
@@ -455,10 +456,17 @@ pub fn measure_paragraph_typed(
         snap_pitch_px,
         run_snaps: &run_snaps,
     })?;
-    if insets.marker_tab_overrun > 0.0
+    // `markerTabOffset` is the first-line body shift from a visible marker:
+    // hanging-slot overrun, or the inline footprint when hanging is zero.
+    let marker_body_offset = if insets.marker_tab_overrun > 0.0 {
+        insets.marker_tab_overrun
+    } else {
+        insets.marker_inline_width
+    };
+    if marker_body_offset > 0.0
         && let Some(line) = extent.lines.first_mut()
     {
-        line.marker_tab_offset = Some(insets.marker_tab_overrun);
+        line.marker_tab_offset = Some(marker_body_offset);
     }
     Ok(extent)
 }
@@ -498,13 +506,19 @@ fn line_insets(
         }
         _ => 0.0,
     };
+    let indent_left = indent.and_then(|i| i.left).unwrap_or(0.0);
     let first_line_offset = if visible_marker && hanging > 0.0 {
-        marker_tab_overrun
+        // With no positive left indent, paint seats body text at `hanging`.
+        if indent_left <= 0.0 {
+            hanging + marker_tab_overrun
+        } else {
+            marker_tab_overrun
+        }
     } else {
         indent.and_then(|i| i.first_line).unwrap_or(0.0) - hanging
     };
     Ok(LineInsets {
-        left: indent.and_then(|i| i.left).unwrap_or(0.0),
+        left: indent_left,
         right: indent.and_then(|i| i.right).unwrap_or(0.0),
         first_line_offset,
         marker_inline_width,

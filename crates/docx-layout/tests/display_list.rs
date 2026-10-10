@@ -1883,6 +1883,150 @@ fn hanging_list_first_line_body_sits_at_the_text_indent() {
     );
 }
 
+/// Zero hanging: body text starts after the measured marker footprint.
+#[test]
+fn zero_hanging_list_marker_shifts_body_by_marker_tab_offset() {
+    let input = serde_json::json!({
+        "measured": [{
+            "block": { "kind": "paragraph", "id": 1, "pmStart": 1, "pmEnd": 20,
+                "attrs": {
+                    "listMarker": "1.2.3",
+                    "listMarkerFontSize": 12.0,
+                    "indent": { "left": 0.0, "hanging": 0.0 }
+                },
+                "runs": [{ "kind": "text", "text": "Chapter", "pmStart": 1, "pmEnd": 8 }] },
+            "measure": { "kind": "paragraph", "totalHeight": 24.0, "lines": [
+                { "headRun": 0, "headChar": 0, "tailRun": 0, "tailChar": 7,
+                  "width": 70.0, "ascent": 12.0, "descent": 4.0, "lineHeight": 24.0,
+                  "markerTabOffset": 48.0 }
+            ] }
+        }],
+        "options": {},
+        "layout": { "pages": [{ "size": { "w": 700.0, "h": 400.0 }, "margins": {}, "fragments": [
+            { "kind": "paragraph", "blockId": 1, "x": 100.0, "y": 50.0, "width": 500.0,
+              "height": 24.0, "fromLine": 0, "toLine": 1, "pmStart": 1, "pmEnd": 20 }
+        ] }] }
+    })
+    .to_string();
+
+    let dl = build_dl(&input);
+    let marker = dl.pages[0]
+        .primitives
+        .iter()
+        .find_map(|primitive| match primitive {
+            Primitive::Text(text) if text.attrs.list_marker == Some(true) => Some(text),
+            _ => None,
+        })
+        .expect("marker primitive");
+    let body = dl.pages[0]
+        .primitives
+        .iter()
+        .find_map(|primitive| match primitive {
+            Primitive::Text(text)
+                if !text.text.is_empty() && text.attrs.list_marker != Some(true) =>
+            {
+                Some(text)
+            }
+            _ => None,
+        })
+        .expect("body primitive");
+    let body_x = body.x.as_f64().unwrap();
+    let marker_x = marker.x.as_f64().unwrap();
+    let marker_w = marker.width.as_f64().unwrap();
+    assert!(
+        (body_x - 148.0).abs() < 0.01,
+        "body x {} (want 148 = frag.x + markerTabOffset)",
+        body_x
+    );
+    assert!(
+        (marker_x - 100.0).abs() < 0.01,
+        "marker x {} (want 100)",
+        marker_x
+    );
+    assert!(
+        (marker_w - 48.0).abs() < 0.01,
+        "marker width {} (want 48)",
+        marker_w
+    );
+    assert!(
+        (marker_x + marker_w - body_x).abs() < 0.01,
+        "marker ends where body begins"
+    );
+}
+
+/// Space-suffix overrun past a hanging slot pushes body text right of the marker.
+#[test]
+fn hanging_list_marker_space_overrun_shifts_body_past_the_slot() {
+    let input = serde_json::json!({
+        "measured": [{
+            "block": { "kind": "paragraph", "id": 1, "pmStart": 1, "pmEnd": 20,
+                "attrs": {
+                    "listMarker": "1.2.3.4.5",
+                    "listMarkerSuffix": "space",
+                    "listMarkerFontSize": 12.0,
+                    "indent": { "left": 40.0, "hanging": 40.0 }
+                },
+                "runs": [{ "kind": "text", "text": "Title", "pmStart": 1, "pmEnd": 6 }] },
+            "measure": { "kind": "paragraph", "totalHeight": 24.0, "lines": [
+                { "headRun": 0, "headChar": 0, "tailRun": 0, "tailChar": 5,
+                  "width": 50.0, "ascent": 12.0, "descent": 4.0, "lineHeight": 24.0,
+                  "markerTabOffset": 36.0 }
+            ] }
+        }],
+        "options": {},
+        "layout": { "pages": [{ "size": { "w": 700.0, "h": 400.0 }, "margins": {}, "fragments": [
+            { "kind": "paragraph", "blockId": 1, "x": 100.0, "y": 50.0, "width": 500.0,
+              "height": 24.0, "fromLine": 0, "toLine": 1, "pmStart": 1, "pmEnd": 20 }
+        ] }] }
+    })
+    .to_string();
+
+    let dl = build_dl(&input);
+    let marker = dl.pages[0]
+        .primitives
+        .iter()
+        .find_map(|primitive| match primitive {
+            Primitive::Text(text) if text.attrs.list_marker == Some(true) => Some(text),
+            _ => None,
+        })
+        .expect("marker primitive");
+    let body = dl.pages[0]
+        .primitives
+        .iter()
+        .find_map(|primitive| match primitive {
+            Primitive::Text(text)
+                if !text.text.is_empty() && text.attrs.list_marker != Some(true) =>
+            {
+                Some(text)
+            }
+            _ => None,
+        })
+        .expect("body primitive");
+    let body_x = body.x.as_f64().unwrap();
+    let marker_x = marker.x.as_f64().unwrap();
+    let marker_w = marker.width.as_f64().unwrap();
+    // frag.x 100 + left 40 + overrun 36 = 176; slot = hanging 40 + overrun 36 = 76
+    assert!(
+        (body_x - 176.0).abs() < 0.01,
+        "body x {} (want 176)",
+        body_x
+    );
+    assert!(
+        (marker_x - 100.0).abs() < 0.01,
+        "marker x {} (want 100)",
+        marker_x
+    );
+    assert!(
+        (marker_w - 76.0).abs() < 0.01,
+        "marker width {} (want 76)",
+        marker_w
+    );
+    assert!(
+        (marker_x + marker_w - body_x).abs() < 0.01,
+        "marker ends where body begins"
+    );
+}
+
 /// `jc=both` stretches expandable spaces to fill the usable width. A
 /// non-last line reaches the right margin and carries the per-space add as
 /// `wordSpacing`; the paragraph's closing line stays at natural width.

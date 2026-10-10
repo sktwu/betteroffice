@@ -53,34 +53,70 @@ pub(super) fn list_marker_inline_width(
     }
 }
 
-/// Extra first-line indent when a tab-suffixed marker overruns its hanging slot.
+/// Extra first-line indent when a visible marker overruns its hanging slot.
+///
+/// `tab` (default) advances to the next stop past the marker end; `space` /
+/// `nothing` place the body immediately after the marker footprint. When
+/// `indent.left <= 0`, the body edge matches paint (`hanging`) and the marker
+/// starts at zero.
 pub(super) fn list_marker_tab_overrun(
     store: &FontStore,
     input: &MeasureRequest<'_>,
     attrs: &AttrsIn,
 ) -> Result<f32, MeasureError> {
-    if attrs.bidi || !matches!(attrs.list_marker_suffix.as_deref(), None | Some("tab")) {
+    if attrs.bidi {
         return Ok(0.0);
+    }
+    match attrs.list_marker_suffix.as_deref() {
+        None | Some("tab") | Some("space") | Some("nothing") => {}
+        Some(_) => return Ok(0.0),
     }
     let indent = attrs.indent.as_ref();
     let indent_left = indent.and_then(|i| i.left).unwrap_or(0.0);
     let hanging = indent.and_then(|i| i.hanging).unwrap_or(0.0);
-    if indent_left <= 0.0 || hanging <= 0.0 || hanging > indent_left {
+    if hanging <= 0.0 {
+        return Ok(0.0);
+    }
+    // Invalid hanging past a positive left indent: keep today's text start.
+    if indent_left > 0.0 && hanging > indent_left {
         return Ok(0.0);
     }
     let Some(marker) = visible_marker(attrs) else {
         return Ok(0.0);
     };
     let (natural_width, size_px) = marker_text_width(store, input, attrs, marker)?;
-    let marker_end_px = indent_left - hanging + natural_width;
-    if marker_end_px <= indent_left {
-        return Ok(0.0);
-    }
-    let body_start =
-        marker_tab_stop(attrs, marker_end_px)?.unwrap_or(marker_end_px + size_px * 0.5);
-    let overrun = body_start - indent_left;
+    let (marker_start_px, body_edge) = if indent_left <= 0.0 {
+        (0.0, hanging)
+    } else {
+        (indent_left - hanging, indent_left)
+    };
+    let marker_end_px = marker_start_px + natural_width;
+    let body_start = match attrs.list_marker_suffix.as_deref() {
+        Some("nothing") => {
+            if marker_end_px <= body_edge {
+                return Ok(0.0);
+            }
+            marker_end_px
+        }
+        Some("space") => {
+            let (space, _) = marker_text_width(store, input, attrs, " ")?;
+            let end = marker_end_px + space;
+            if end <= body_edge {
+                return Ok(0.0);
+            }
+            end
+        }
+        // Tab stops only apply once the marker glyph itself overruns the slot.
+        _ => {
+            if marker_end_px <= body_edge {
+                return Ok(0.0);
+            }
+            marker_tab_stop(attrs, marker_end_px)?.unwrap_or(marker_end_px + size_px * 0.5)
+        }
+    };
+    let overrun = body_start - body_edge;
     let indent_right = indent.and_then(|i| i.right).unwrap_or(0.0);
-    let body_width = input.max_width - indent_left - indent_right;
+    let body_width = input.max_width - indent_left.max(0.0) - indent_right;
     // Keep today's text start when the stop leaves less than an em for the text.
     Ok(if overrun <= body_width - size_px {
         overrun
