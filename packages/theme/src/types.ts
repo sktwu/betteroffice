@@ -9,6 +9,9 @@ export interface IBetterOfficeThemeSeed {
   /** Neutral color (e.g., '#202124'). Used for text, borders, backgrounds. */
   neutral: string
 
+  /** Optional accent. When omitted, derived by shifting the primary hue. */
+  accent?: string
+
   /** Optional: Status colors. If not provided, defaults will be used. */
   error?: string
   success?: string
@@ -28,6 +31,8 @@ export interface IBetterOfficeThemeTokens {
   'doc-accent': string
   'doc-accent-bg': string
   'doc-on-primary': string
+  'doc-toggle-active-bg': string
+  'doc-toggle-active-fg': string
 
   // Surface colors
   'doc-surface': string

@@ -12,16 +12,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.oox-root {
+.app-container {
   background-color: var(--doc-bg);
   color: var(--doc-text);
   transition: background-color 0.3s, color 0.3s;
-  min-height: 100vh;
-}
-
-.oox-root.dark {
-  background-color: var(--doc-bg);
-  color: var(--doc-text);
 }
 
 /* Buttons */
@@ -135,6 +129,7 @@ button:disabled {
 }
 
 .color-picker input[type="color"] {
+  flex: 0 0 50px;
   width: 50px;
   height: 40px;
   border: 1px solid var(--doc-border);
@@ -144,6 +139,7 @@ button:disabled {
 
 .color-picker input[type="text"] {
   flex: 1;
+  min-width: 0;
   padding: 8px 12px;
   border: 1px solid var(--doc-border-input);
   border-radius: 4px;

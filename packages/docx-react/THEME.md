@@ -13,8 +13,12 @@ bun add @betteroffice/docx-react @betteroffice/theme
 Wrap your app with the theme provider:
 
 ```typescript
-import { BetterOfficeThemeProvider } from '@betteroffice/docx-react'
-import { DocxEditor } from '@betteroffice/docx-react'
+import { BetterOfficeThemeProvider, DocxEditor, useTheme } from '@betteroffice/docx-react'
+
+function Editor() {
+  const { mode } = useTheme()
+  return <DocxEditor colorMode={mode} />
+}
 
 function App() {
   return (
@@ -25,11 +29,13 @@ function App() {
       }}
       defaultMode="light"
     >
-      <DocxEditor />
+      <Editor />
     </BetterOfficeThemeProvider>
   )
 }
 ```
+
+The provider injects one `<style data-betteroffice-theme>` that themes every `.oox-root`, including portals. It does not toggle `.dark`; pass `mode` to the editor's `colorMode`.
 
 ## Hooks
 
@@ -182,10 +188,10 @@ Use CSS variables in your stylesheets:
 ## Troubleshooting
 
 **Q: Styles aren't applying?**  
-A: Ensure the `.oox-root` element exists in your DOM. The provider applies styles to this element.
+A: Ensure the provider is mounted and a `<style data-betteroffice-theme>` element exists in `<head>`.
 
 **Q: Dark mode not working?**  
-A: Verify `.dark` class is being added to `.oox-root` when switching to dark mode.
+A: Pass `mode` from `useTheme()` to the editor's `colorMode` prop.
 
 **Q: Colors look wrong?**  
 A: Check that seed colors are valid hex (#RRGGBB) or OKLCH format.

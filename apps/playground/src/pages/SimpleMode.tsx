@@ -1,37 +1,21 @@
-import { useState, useEffect } from 'react'
-import { generateBetterOfficeTheme, applyBetterOfficeTheme } from '@betteroffice/theme'
+import { useTheme } from '@betteroffice/docx-react'
 import ColorPicker from '../components/ColorPicker'
+import { useSetSeed } from '../seed-context'
 
 export default function SimpleMode() {
-  const theme = (window as any).__betterOfficeTheme
-  const [primary, setPrimary] = useState(theme.seed.primary)
-
-  useEffect(() => {
-    const handleThemeChange = () => {
-      setPrimary(theme.seed.primary)
-    }
-    window.addEventListener('themechange', handleThemeChange)
-    return () => window.removeEventListener('themechange', handleThemeChange)
-  }, [])
-
-  const handleChange = (color: string) => {
-    setPrimary(color)
-    const newSeed = { ...theme.seed, primary: color }
-    const lightTokens = generateBetterOfficeTheme(newSeed, 'light')
-    const darkTokens = generateBetterOfficeTheme(newSeed, 'dark')
-    theme.seed = newSeed
-    theme.lightTokens = lightTokens
-    theme.darkTokens = darkTokens
-    const tokens = theme.mode === 'light' ? lightTokens : darkTokens
-    applyBetterOfficeTheme(tokens, '.oox-root')
-  }
+  const { seed } = useTheme()
+  const setSeed = useSetSeed()
 
   return (
     <div className="simple-mode">
       <h2>Simple Mode - Primary Color Only</h2>
       <p>All other tokens are automatically derived from this primary color.</p>
       <div className="simple-controls">
-        <ColorPicker label="Primary Color" value={primary} onChange={handleChange} />
+        <ColorPicker
+          label="Primary Color"
+          value={seed.primary}
+          onChange={(primary) => setSeed({ ...seed, primary })}
+        />
       </div>
       <div className="simple-preview">
         <button className="btn-primary">Primary Button</button>

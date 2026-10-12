@@ -1,4 +1,4 @@
-import { converter, formatCss, parse, type Oklch } from 'culori'
+import { converter, displayable, formatCss, parse, type Oklch } from 'culori'
 
 const toOklch = converter('oklch')
 
@@ -31,6 +31,22 @@ export function formatOklch(color: Oklch, alpha?: number): string {
   }
 
   return formatCss(value)
+}
+
+/** Reduce chroma until the color fits sRGB. */
+export function fitInGamut(color: string): string {
+  const parsed = parseColor(color)
+
+  if (!parsed) {
+    return color
+  }
+
+  let chroma = parsed.c ?? 0
+  while (chroma > 0 && !displayable({ ...parsed, c: chroma })) {
+    chroma = Math.max(0, Math.round((chroma - 0.01) * 1000) / 1000)
+  }
+
+  return formatOklch({ ...parsed, c: chroma })
 }
 
 export function hslComponentsToOklch(hsl: string): string {

@@ -5,14 +5,19 @@ Interactive theme development environment. Experiment with colors and see live u
 ## Quick Start
 
 ```bash
-cd apps/playground
 bun install
+bun run build:docx-wasm && bun run build:pptx-wasm && bun run build:xlsx-wasm
+bun run build:theme && bun run build:fonts && bun run build:docx && bun run build:pptx && bun run build:xlsx
+cd apps/playground
 bun run dev
 ```
 
 Opens at `http://localhost:5174`
 
 ## Pages
+
+### Word / PowerPoint / Excel
+Real `DocxEditor`, `PptxEditor` and `XlsxEditor` instances. Each opens a sample from `apps/demo/public`; use **Open** or drop a local file to replace it. The theme panel stays on the left, so seed and mode changes apply to the open document. PowerPoint and Excel do not follow the theme yet.
 
 ### Theme Lab
 Main development environment. Adjust primary and neutral colors with live preview.
@@ -45,25 +50,12 @@ Edit `src/pages/ComponentGallery.tsx` to add more component examples.
 
 ### Modify default colors
 
-Edit `src/main.tsx` to change the default seed:
-
-```typescript
-<BetterOfficeThemeProvider
-  seed={{
-    primary: '#ff00ff',  // Your color
-    neutral: '#333333'
-  }}
->
-```
-
-### Add test fixtures
-
-Place test DOCX files in a fixtures directory and load them programmatically.
+Edit the initial `seed` state in `src/main.tsx`; it is passed to `BetterOfficeThemeProvider`.
 
 ## Technology Stack
 
 - **Vite 5**: Lightning-fast dev server and build
-- **React 18**: UI library
+- **React 19**: UI library
 - **@betteroffice/theme**: Core generation
 - **@betteroffice/docx-react**: Editor integration and theming hooks
 - **CSS Variables**: Token application

@@ -128,7 +128,7 @@ export function TableMoreDropdown({
         <MaterialSymbol
           name={icon}
           size={16}
-          className={opts?.danger && !isItemDisabled ? 'text-destructive' : ''}
+          className={opts?.danger && !isItemDisabled ? 'text-doc-error' : ''}
         />
         <span style={{ flex: 1 }}>{label}</span>
       </button>
@@ -140,8 +140,8 @@ export function TableMoreDropdown({
       variant="ghost"
       size="icon-sm"
       className={cn(
-        'text-muted-foreground hover:text-foreground hover:bg-muted/80',
-        isOpen && 'bg-muted',
+        'text-doc-text-muted hover:text-doc-text hover:bg-doc-bg-hover',
+        isOpen && 'bg-doc-bg-subtle',
         disabled && 'opacity-30 cursor-not-allowed'
       )}
       onMouseDown={handleMouseDown}

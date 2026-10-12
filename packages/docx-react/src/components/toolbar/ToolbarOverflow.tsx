@@ -151,7 +151,7 @@ export function ToolbarRail({ children, className, style, label, testId }: Toolb
   return (
     <div
       className={cn(
-        'flex items-center px-2 py-1 bg-muted rounded-full min-h-[36px] mx-2 mb-1 min-w-0',
+        'flex items-center px-2 py-1 bg-doc-bg-subtle rounded-full min-h-[36px] mx-2 mb-1 min-w-0',
         className
       )}
       style={style}
@@ -179,7 +179,7 @@ export function ToolbarRail({ children, className, style, label, testId }: Toolb
             trigger={<MaterialSymbol name="more_vert" size={18} />}
             entries={menuEntries}
             colors={MENU_COLORS}
-            triggerClassName="oox-toolbar-toggle inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground"
+            triggerClassName="oox-toolbar-toggle inline-flex h-7 w-7 items-center justify-center rounded-md text-doc-text-muted"
             testId="toolbar-more"
             onItemSelected={(modality) => {
               if (modality === 'pointer') docxCommandController(store)?.focusEditor();

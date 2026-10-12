@@ -217,7 +217,7 @@ export function PluginDock({
                 onClick={() => choose(entry.pluginId)}
                 className={cn(
                   'rounded px-2 py-1 text-xs truncate',
-                  current ? 'bg-doc-primary-light text-doc-primary' : 'text-muted-foreground'
+                  current ? 'bg-doc-primary-light text-doc-primary' : 'text-doc-text-muted'
                 )}
                 style={{ maxWidth: 160 }}
               >
@@ -235,7 +235,7 @@ export function PluginDock({
             onClick={() =>
               setCollapsed((previous) => ({ ...previous, [active.pluginId]: !isCollapsed }))
             }
-            className="rounded px-1 text-xs text-muted-foreground"
+            className="rounded px-1 text-xs text-doc-text-muted"
           >
             {isCollapsed ? '+' : '−'}
           </button>
@@ -272,7 +272,7 @@ export function PluginDock({
               aria-label={toggleLabel}
               title={toggleLabel}
               onClick={closeDrawer}
-              className="rounded px-1 text-xs text-muted-foreground"
+              className="rounded px-1 text-xs text-doc-text-muted"
             >
               ×
             </button>

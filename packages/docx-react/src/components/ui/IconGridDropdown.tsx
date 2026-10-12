@@ -81,8 +81,8 @@ export function IconGridDropdown<T extends string = string>({
       variant="ghost"
       size="icon-sm"
       className={cn(
-        'text-muted-foreground hover:text-foreground hover:bg-muted/80',
-        isOpen && 'bg-muted',
+        'text-doc-text-muted hover:text-doc-text hover:bg-doc-bg-hover',
+        isOpen && 'bg-doc-bg-subtle',
         disabled && 'opacity-30 cursor-not-allowed'
       )}
       onMouseDown={handleMouseDown}

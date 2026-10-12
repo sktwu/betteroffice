@@ -93,7 +93,7 @@ export function ZoomControl({
         size="icon-sm"
         className={cn(
           btnCls,
-          'text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-r-none',
+          'text-doc-text-muted hover:text-doc-text hover:bg-doc-bg-hover rounded-r-none',
           (disabled || !prevLevel) && 'opacity-30 cursor-not-allowed'
         )}
         onClick={() => prevLevel && onChange?.(prevLevel.value)}
@@ -126,7 +126,7 @@ export function ZoomControl({
         size="icon-sm"
         className={cn(
           btnCls,
-          'text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-l-none',
+          'text-doc-text-muted hover:text-doc-text hover:bg-doc-bg-hover rounded-l-none',
           (disabled || !nextLevel) && 'opacity-30 cursor-not-allowed'
         )}
         onClick={() => nextLevel && onChange?.(nextLevel.value)}

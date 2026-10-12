@@ -91,7 +91,7 @@ export function ToolbarButton({
       className={cn(
         // Hover + active states live in editor.css (.oox-toolbar-toggle); see
         // that rule for why they're not Tailwind utilities here.
-        'oox-toolbar-toggle text-muted-foreground',
+        'oox-toolbar-toggle text-doc-text-muted',
         disabled && 'opacity-30 cursor-not-allowed',
         className
       )}
@@ -132,7 +132,7 @@ export function ToolbarGroup({ label, children, className }: ToolbarGroupProps) 
   return (
     <div
       className={cn(
-        'flex flex-shrink-0 items-center gap-px px-1.5 border-r border-border/50 last:border-r-0 first:pl-0',
+        'flex flex-shrink-0 items-center gap-px px-1.5 border-r border-doc-border last:border-r-0 first:pl-0',
         className
       )}
       role="group"
@@ -147,7 +147,7 @@ export function ToolbarGroup({ label, children, className }: ToolbarGroupProps) 
 export function ToolbarSeparator() {
   return (
     <div
-      className="w-px h-6 flex-shrink-0 bg-border mx-1.5"
+      className="w-px h-6 flex-shrink-0 bg-doc-border mx-1.5"
       role="separator"
       aria-orientation="vertical"
     />

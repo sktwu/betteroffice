@@ -171,7 +171,7 @@ export function SplitCellIcon(): React.ReactElement {
 }
 
 export function DeleteTableIcon(): React.ReactElement {
-  return <MaterialSymbol name="delete" size={ICON_SIZE} className="text-destructive" />;
+  return <MaterialSymbol name="delete" size={ICON_SIZE} className="text-doc-error" />;
 }
 
 export function SelectTableIcon(): React.ReactElement {

@@ -2,7 +2,7 @@
 export type { IBetterOfficeThemeSeed, IBetterOfficeThemeTokens, IBetterOfficeThemeMode } from './types'
 
 // Core API
-export { generateBetterOfficeTheme, applyBetterOfficeTheme } from './theme'
+export { generateBetterOfficeTheme, applyBetterOfficeTheme, createBetterOfficeThemeCss } from './theme'
 
 // Constants
 export {

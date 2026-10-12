@@ -1,15 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useTheme } from '@betteroffice/docx-react'
 
 export default function TokenTable() {
-  const theme = (window as any).__betterOfficeTheme
-  const [, setUpdate] = useState({})
-
-  useEffect(() => {
-    const handleThemeChange = () => setUpdate({})
-    window.addEventListener('themechange', handleThemeChange)
-    return () => window.removeEventListener('themechange', handleThemeChange)
-  }, [])
-
+  const theme = useTheme()
   const tokens = theme.mode === 'light' ? theme.lightTokens : theme.darkTokens
 
   const categories = {

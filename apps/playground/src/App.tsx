@@ -1,89 +1,83 @@
-import { useState, useEffect } from 'react'
-import { generateBetterOfficeTheme, applyBetterOfficeTheme } from '@betteroffice/theme'
+import { useEffect, useMemo, useState } from 'react'
+import { useTheme } from '@betteroffice/docx-react'
+import ThemePanel from './components/ThemePanel'
 import ThemeLab from './pages/ThemeLab'
 import SimpleMode from './pages/SimpleMode'
 import ComponentGallery from './pages/ComponentGallery'
+import DocxPreview from './preview/DocxPreview'
+import PptxPreview from './preview/PptxPreview'
+import XlsxPreview from './preview/XlsxPreview'
+import type { FormatId, ILoadedFile } from './preview/formats'
 import './styles/app.css'
 
-type PageType = 'lab' | 'simple' | 'gallery'
+const TABS = [
+  { id: 'docx', label: 'Word' },
+  { id: 'pptx', label: 'PowerPoint' },
+  { id: 'xlsx', label: 'Excel' },
+  { id: 'tokens', label: 'Tokens' },
+  { id: 'simple', label: 'Simple Mode' },
+  { id: 'gallery', label: 'Gallery' }
+] as const
 
-// Simple hook to access global theme
-function useTheme() {
-  const [, setUpdate] = useState({})
-  const theme = (window as any).__betterOfficeTheme
-  
-  useEffect(() => {
-    const handleThemeChange = () => setUpdate({})
-    window.addEventListener('themechange', handleThemeChange)
-    return () => window.removeEventListener('themechange', handleThemeChange)
-  }, [])
-  
-  return {
-    seed: theme.seed,
-    mode: theme.mode,
-    lightTokens: theme.lightTokens,
-    darkTokens: theme.darkTokens,
-    setMode: theme.setMode,
-    setSeed: (seed: any) => {
-      theme.seed = seed
-      theme.lightTokens = generateBetterOfficeTheme(seed, 'light')
-      theme.darkTokens = generateBetterOfficeTheme(seed, 'dark')
-      const tokens = theme.mode === 'light' ? theme.lightTokens : theme.darkTokens
-      applyBetterOfficeTheme(tokens, '.oox-root')
-      window.dispatchEvent(new CustomEvent('themechange', { detail: { seed } }))
-    }
-  }
+type TabId = (typeof TABS)[number]['id']
+
+function readTab(): TabId {
+  const hash = window.location.hash.slice(1)
+  return TABS.some((tab) => tab.id === hash) ? (hash as TabId) : 'docx'
 }
 
-(window as any).useTheme = useTheme
-
 export default function App() {
-  const [page, setPage] = useState<PageType>('lab')
-  const { mode, setMode } = useTheme()
+  const { mode } = useTheme()
+  const [tab, setTab] = useState<TabId>(readTab)
+  const [files, setFiles] = useState<Partial<Record<FormatId, ILoadedFile>>>({})
+
+  useEffect(() => {
+    const onHashChange = () => setTab(readTab())
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  const selectTab = (next: TabId) => {
+    window.location.hash = next
+    setTab(next)
+  }
+
+  const setFile = useMemo(() => {
+    const handler = (format: FormatId) => (file: ILoadedFile) =>
+      setFiles((prev) => ({ ...prev, [format]: file }))
+    const handlers = { docx: handler('docx'), pptx: handler('pptx'), xlsx: handler('xlsx') }
+    return (format: FormatId) => handlers[format]
+  }, [])
 
   return (
-    <div className="app-container oox-root" data-mode={mode}>
+    <div className={`app-container oox-root${mode === 'dark' ? ' dark' : ''}`}>
       <header className="app-header">
-        <h1>🎨 BetterOffice Theme Playground</h1>
-        <div className="header-controls">
-          <nav className="nav-tabs">
+        <h1>BetterOffice Theme Playground</h1>
+        <nav className="nav-tabs">
+          {TABS.map((item) => (
             <button
-              className={`tab ${page === 'lab' ? 'active' : ''}`}
-              onClick={() => setPage('lab')}
+              key={item.id}
+              type="button"
+              className={`tab ${tab === item.id ? 'active' : ''}`}
+              onClick={() => selectTab(item.id)}
             >
-              Theme Lab
+              {item.label}
             </button>
-            <button
-              className={`tab ${page === 'simple' ? 'active' : ''}`}
-              onClick={() => setPage('simple')}
-            >
-              Simple Mode
-            </button>
-            <button
-              className={`tab ${page === 'gallery' ? 'active' : ''}`}
-              onClick={() => setPage('gallery')}
-            >
-              Component Gallery
-            </button>
-          </nav>
-          <button
-            className="mode-toggle"
-            onClick={() => setMode(mode === 'light' ? 'dark' : 'light')}
-          >
-            {mode === 'light' ? '🌙 Dark' : '☀️ Light'}
-          </button>
-        </div>
+          ))}
+        </nav>
       </header>
 
-      <main className="app-main">
-        {page === 'lab' && <ThemeLab />}
-        {page === 'simple' && <SimpleMode />}
-        {page === 'gallery' && <ComponentGallery />}
-      </main>
-
-      <footer className="app-footer">
-        <p>Theme tokens update in real-time. Try switching between light and dark modes!</p>
-      </footer>
+      <div className="app-body">
+        <ThemePanel />
+        <main className={`app-main${tab === 'docx' || tab === 'pptx' || tab === 'xlsx' ? ' app-main-editor' : ''}`}>
+          {tab === 'docx' && <DocxPreview file={files.docx} onFile={setFile('docx')} />}
+          {tab === 'pptx' && <PptxPreview file={files.pptx} onFile={setFile('pptx')} />}
+          {tab === 'xlsx' && <XlsxPreview file={files.xlsx} onFile={setFile('xlsx')} />}
+          {tab === 'tokens' && <ThemeLab />}
+          {tab === 'simple' && <SimpleMode />}
+          {tab === 'gallery' && <ComponentGallery />}
+        </main>
+      </div>
     </div>
   )
 }

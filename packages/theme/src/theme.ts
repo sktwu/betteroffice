@@ -1,7 +1,16 @@
 import { generateColorScale } from './color/scale'
 import { pickForeground, lightenForDarkMode } from './color/contrast'
+import { fitInGamut, formatOklch, parseColor } from './color/oklch'
 import { STATUS_COLOR_PRESETS, BETTEROFFICE_DEFAULT_PRIMARY, BETTEROFFICE_DEFAULT_NEUTRAL } from './color/constants'
 import type { IBetterOfficeThemeSeed, IBetterOfficeThemeTokens } from './types'
+
+const ACCENT_HUE_OFFSET = 30
+const CHROME_CHROMA = 0.045
+
+const DEFAULT_SEED: IBetterOfficeThemeSeed = {
+  primary: BETTEROFFICE_DEFAULT_PRIMARY,
+  neutral: BETTEROFFICE_DEFAULT_NEUTRAL
+}
 
 /**
  * Generate a complete set of theme tokens from a seed configuration.
@@ -17,19 +26,53 @@ import type { IBetterOfficeThemeSeed, IBetterOfficeThemeTokens } from './types'
  * )
  */
 export function generateBetterOfficeTheme(
-  seed: IBetterOfficeThemeSeed = {
-    primary: BETTEROFFICE_DEFAULT_PRIMARY,
-    neutral: BETTEROFFICE_DEFAULT_NEUTRAL
-  },
-  mode: 'light' | 'dark' = 'light'
+  seed: IBetterOfficeThemeSeed = DEFAULT_SEED,
+  mode: 'light' | 'dark' = 'light',
+  overrides?: Partial<IBetterOfficeThemeTokens>
 ): IBetterOfficeThemeTokens {
-  const { primary, neutral } = seed
+  const tokens = mode === 'light' ? generateLightTokens(seed) : generateDarkTokens(seed)
+  const fitted = fitTokenColors(tokens)
+  return overrides ? { ...fitted, ...overrides } : fitted
+}
 
-  if (mode === 'light') {
-    return generateLightTokens(seed)
-  } else {
-    return generateDarkTokens(seed)
+function chrome(neutral: string, lightness: number): string {
+  const parsed = parseColor(neutral)
+  if (!parsed) return neutral
+  return formatOklch({
+    mode: 'oklch',
+    l: lightness,
+    c: Math.min(parsed.c ?? 0, CHROME_CHROMA),
+    h: parsed.h
+  })
+}
+
+function mix(color: string, percent: number): string {
+  return `color-mix(in srgb, ${color} ${percent}%, transparent)`
+}
+
+function accentFamily(primary: string, accent: string | undefined) {
+  if (accent) {
+    const scale = generateColorScale(accent)
+    return { color: scale['500'], light: scale['50'], dark: scale['900'] }
   }
+  const parsed = parseColor(primary)
+  const hue = ((parsed?.h ?? 0) + ACCENT_HUE_OFFSET) % 360
+  const shifted = formatOklch({
+    mode: 'oklch',
+    l: parsed?.l ?? 0.5,
+    c: parsed?.c ?? 0,
+    h: hue
+  })
+  const scale = generateColorScale(shifted)
+  return { color: scale['500'], light: scale['50'], dark: scale['900'] }
+}
+
+function fitTokenColors(tokens: IBetterOfficeThemeTokens): IBetterOfficeThemeTokens {
+  const next = { ...tokens }
+  for (const key of Object.keys(next) as (keyof IBetterOfficeThemeTokens)[]) {
+    if (next[key].startsWith('oklch(')) next[key] = fitInGamut(next[key])
+  }
+  return next
 }
 
 /**
@@ -51,23 +94,26 @@ function generateLightTokens(seed: IBetterOfficeThemeSeed): IBetterOfficeThemeTo
   const successScale = generateColorScale(successColor)
   const warningScale = generateColorScale(warningColor)
   const linkScale = generateColorScale(linkColor)
+  const accent = accentFamily(primary, seed.accent)
 
   return {
     // Primary family
     'doc-primary': primaryScale['500'],
     'doc-primary-hover': primaryScale['600'],
     'doc-primary-light': primaryScale['100'],
-    'doc-accent': primaryScale['500'],
-    'doc-accent-bg': primaryScale['50'],
+    'doc-accent': accent.color,
+    'doc-accent-bg': accent.light,
     'doc-on-primary': pickForeground(primaryScale['500']),
+    'doc-toggle-active-bg': primaryScale['100'],
+    'doc-toggle-active-fg': primaryScale['700'],
 
     // Surfaces
-    'doc-surface': neutralScale['50'] || '#ffffff',
-    'doc-card': neutralScale['50'],
-    'doc-bg': neutralScale['100'],
-    'doc-bg-subtle': neutralScale['150'],
-    'doc-bg-hover': neutralScale['200'],
-    'doc-bg-input': neutralScale['100'],
+    'doc-surface': chrome(neutral, 0.955),
+    'doc-card': chrome(neutral, 0.97),
+    'doc-bg': chrome(neutral, 0.93),
+    'doc-bg-subtle': chrome(neutral, 0.9),
+    'doc-bg-hover': chrome(neutral, 0.86),
+    'doc-bg-input': chrome(neutral, 0.94),
 
     // Text
     'doc-text': neutralScale['900'],
@@ -76,10 +122,10 @@ function generateLightTokens(seed: IBetterOfficeThemeSeed): IBetterOfficeThemeTo
     'doc-text-placeholder': neutralScale['400'],
 
     // Borders
-    'doc-border': neutralScale['300'],
-    'doc-border-light': neutralScale['200'],
-    'doc-border-dark': neutralScale['400'],
-    'doc-border-input': neutralScale['300'],
+    'doc-border': chrome(neutral, 0.8),
+    'doc-border-light': chrome(neutral, 0.86),
+    'doc-border-dark': chrome(neutral, 0.74),
+    'doc-border-input': chrome(neutral, 0.78),
 
     // Status
     'doc-error': errorScale['500'],
@@ -94,17 +140,17 @@ function generateLightTokens(seed: IBetterOfficeThemeSeed): IBetterOfficeThemeTo
     'doc-link': linkScale['600'],
 
     // Shadows
-    'doc-shadow': 'rgba(0, 0, 0, 0.15)',
-    'doc-shadow-strong': 'rgba(0, 0, 0, 0.3)',
-    'doc-shadow-subtle': 'rgba(0, 0, 0, 0.06)',
-    'doc-shadow-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)',
-    'doc-card-shadow': '0 1px 3px rgba(60, 64, 67, 0.2), 0 2px 6px rgba(60, 64, 67, 0.08)',
-    'doc-card-shadow-strong': '0 1px 3px rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15)',
+    'doc-shadow': mix(neutral, 15),
+    'doc-shadow-strong': mix(neutral, 30),
+    'doc-shadow-subtle': mix(neutral, 6),
+    'doc-shadow-lg': `0 10px 15px -3px ${mix(neutral, 10)}, 0 4px 6px -4px ${mix(neutral, 10)}`,
+    'doc-card-shadow': `0 1px 3px ${mix(neutral, 20)}, 0 2px 6px ${mix(neutral, 8)}`,
+    'doc-card-shadow-strong': `0 1px 3px ${mix(neutral, 30)}, 0 4px 8px 3px ${mix(neutral, 15)}`,
 
     // Other
-    'doc-overlay': 'rgba(0, 0, 0, 0.5)',
-    'doc-focus-ring': `rgba(26, 115, 232, 0.4)`,
-    'doc-selection': `rgba(26, 115, 232, 0.3)`,
+    'doc-overlay': mix(neutral, 50),
+    'doc-focus-ring': mix(primaryScale['500'], 40),
+    'doc-selection': mix(primaryScale['500'], 30),
 
     'doc-scrollbar-thumb': `color-mix(in srgb, ${neutralScale['500']} 45%, transparent)`,
     'doc-scrollbar-thumb-hover': `color-mix(in srgb, ${neutralScale['500']} 65%, transparent)`,
@@ -143,23 +189,26 @@ function generateDarkTokens(seed: IBetterOfficeThemeSeed): IBetterOfficeThemeTok
   const successScale = generateColorScale(successDark)
   const warningScale = generateColorScale(warningDark)
   const linkScale = generateColorScale(linkDark)
+  const accent = accentFamily(primaryDark, seed.accent ? lightenForDarkMode(seed.accent) : undefined)
 
   return {
     // Primary family (inverted - darker primary becomes lighter in dark mode)
     'doc-primary': primaryScale['500'],
     'doc-primary-hover': primaryScale['400'],
     'doc-primary-light': primaryScale['200'],
-    'doc-accent': primaryScale['500'],
-    'doc-accent-bg': primaryScale['900'],
+    'doc-accent': accent.color,
+    'doc-accent-bg': accent.dark,
     'doc-on-primary': pickForeground(primaryScale['500']),
+    'doc-toggle-active-bg': primaryScale['200'],
+    'doc-toggle-active-fg': primaryScale['500'],
 
     // Surfaces (inverted)
-    'doc-surface': neutralScale['950'] || '#1f1f1f',
-    'doc-card': neutralScale['900'],
-    'doc-bg': neutralScale['800'],
-    'doc-bg-subtle': neutralScale['800'],
-    'doc-bg-hover': neutralScale['700'],
-    'doc-bg-input': neutralScale['800'],
+    'doc-surface': chrome(neutral, 0.22),
+    'doc-card': chrome(neutral, 0.26),
+    'doc-bg': chrome(neutral, 0.18),
+    'doc-bg-subtle': chrome(neutral, 0.26),
+    'doc-bg-hover': chrome(neutral, 0.32),
+    'doc-bg-input': chrome(neutral, 0.24),
 
     // Text (inverted - light in dark mode)
     'doc-text': neutralScale['50'],
@@ -168,10 +217,10 @@ function generateDarkTokens(seed: IBetterOfficeThemeSeed): IBetterOfficeThemeTok
     'doc-text-placeholder': neutralScale['500'],
 
     // Borders (inverted)
-    'doc-border': neutralScale['700'],
-    'doc-border-light': neutralScale['700'],
-    'doc-border-dark': neutralScale['800'],
-    'doc-border-input': neutralScale['700'],
+    'doc-border': chrome(neutral, 0.4),
+    'doc-border-light': chrome(neutral, 0.36),
+    'doc-border-dark': chrome(neutral, 0.3),
+    'doc-border-input': chrome(neutral, 0.42),
 
     // Status (inverted)
     'doc-error': errorScale['500'],
@@ -186,23 +235,43 @@ function generateDarkTokens(seed: IBetterOfficeThemeSeed): IBetterOfficeThemeTok
     'doc-link': linkScale['500'],
 
     // Shadows (stronger in dark mode)
-    'doc-shadow': 'rgba(0, 0, 0, 0.4)',
-    'doc-shadow-strong': 'rgba(0, 0, 0, 0.6)',
-    'doc-shadow-subtle': 'rgba(0, 0, 0, 0.2)',
-    'doc-shadow-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5)',
-    'doc-card-shadow': '0 1px 3px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2)',
-    'doc-card-shadow-strong': '0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 8px 3px rgba(0, 0, 0, 0.3)',
+    'doc-shadow': mix(neutral, 40),
+    'doc-shadow-strong': mix(neutral, 60),
+    'doc-shadow-subtle': mix(neutral, 20),
+    'doc-shadow-lg': `0 10px 15px -3px ${mix(neutral, 50)}, 0 4px 6px -4px ${mix(neutral, 50)}`,
+    'doc-card-shadow': `0 1px 3px ${mix(neutral, 40)}, 0 2px 6px ${mix(neutral, 20)}`,
+    'doc-card-shadow-strong': `0 1px 3px ${mix(neutral, 50)}, 0 4px 8px 3px ${mix(neutral, 30)}`,
 
     // Other
-    'doc-overlay': 'rgba(0, 0, 0, 0.7)',
-    'doc-focus-ring': `rgba(78, 157, 255, 0.45)`,
-    'doc-selection': `rgba(78, 157, 255, 0.32)`,
+    'doc-overlay': mix(neutral, 70),
+    'doc-focus-ring': mix(primaryScale['500'], 45),
+    'doc-selection': mix(primaryScale['500'], 32),
 
     'doc-scrollbar-thumb': `color-mix(in srgb, ${neutralScale['500']} 45%, transparent)`,
     'doc-scrollbar-thumb-hover': `color-mix(in srgb, ${neutralScale['500']} 65%, transparent)`,
 
     'doc-caret': neutralScale['100']
   }
+}
+
+function declarations(tokens: IBetterOfficeThemeTokens): string {
+  return Object.entries(tokens)
+    .map(([key, value]) => `--${key}:${value};`)
+    .join('')
+}
+
+/**
+ * Build a stylesheet theming every `selector` element (light) and `selector.dark` (dark),
+ * including roots nested inside a dark root. Declarations are `--doc-*` only.
+ * Pure; the `:root` prefix outranks the editor's default rules.
+ */
+export function createBetterOfficeThemeCss(
+  light: IBetterOfficeThemeTokens,
+  dark: IBetterOfficeThemeTokens,
+  selector: string = '.oox-root'
+): string {
+  const darkTargets = `:root ${selector}.dark, :root ${selector}.dark ${selector}`
+  return `:root ${selector}{${declarations(light)}}\n${darkTargets}{${declarations(dark)}}\n`
 }
 
 /**

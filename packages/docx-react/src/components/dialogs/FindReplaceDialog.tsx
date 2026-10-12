@@ -5,8 +5,8 @@
  * Supports find, find next/previous, replace, and replace all operations.
  *
  * Logic and utilities are in separate files:
- * - findReplaceUtils.ts â€” Pure search/replace functions and types
- * - useFindReplace.ts   â€” React hook for dialog state management
+ * - findReplaceUtils.ts â€?Pure search/replace functions and types
+ * - useFindReplace.ts   â€?React hook for dialog state management
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';

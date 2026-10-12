@@ -21,6 +21,32 @@
 
 @tailwind utilities;
 
+/* Scoped stand-in for the form half of preflight. Zero specificity, so it
+ * does not restyle the host or override component classes. */
+:where(.oox-root) :where(button, [type='button'], [type='submit'], [type='reset']) {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: transparent;
+  background-image: none;
+  border-style: solid;
+  border-width: 0;
+  border-color: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+:where(.oox-root) :where(input:not([type='color']), select, textarea) {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+
 /* ============================================================================
  * CSS CUSTOM PROPERTIES (shadcn theme)
  * ============================================================================ */
@@ -85,10 +111,8 @@
    * dark buttons, badges, tooltips). Inverts in dark mode so contrast holds. */
   --doc-on-primary: #ffffff;
 
-  /* Active toolbar toggle (bold/italic/comments/...): dark slab in light mode,
-   * Word-accent tint in dark mode (where a dark slab would flip light). */
-  --doc-toggle-active-bg: hsl(var(--foreground));
-  --doc-toggle-active-fg: #ffffff;
+  --doc-toggle-active-bg: var(--doc-primary-light);
+  --doc-toggle-active-fg: var(--doc-primary);
 
   /* Text */
   --doc-text: #202124; /* primary text */

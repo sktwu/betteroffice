@@ -233,7 +233,7 @@ export function FontSizePicker({
         variant="ghost"
         size="icon-sm"
         className={cn(
-          'h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-r-none',
+          'h-7 w-7 text-doc-text-muted hover:text-doc-text hover:bg-doc-bg-hover rounded-r-none',
           disabled && 'opacity-30 cursor-not-allowed'
         )}
         onMouseDown={handleDecrease}
@@ -258,8 +258,8 @@ export function FontSizePicker({
             onBlur={handleInputBlur}
             onKeyDown={handleInputKeyDown}
             className={cn(
-              'h-7 w-10 text-center text-sm border border-input bg-doc-bg-input text-doc-text',
-              'focus:outline-none focus:ring-1 focus:ring-ring',
+              'h-7 w-10 text-center text-sm border border-doc-border-input bg-doc-bg-input text-doc-text',
+              'focus:outline-none focus:ring-1 focus:ring-doc-primary',
               'rounded-none'
             )}
             aria-label={t('fontSize.selectAriaLabel')}
@@ -270,9 +270,9 @@ export function FontSizePicker({
             type="button"
             onClick={handleInputClick}
             className={cn(
-              'h-7 w-10 text-center text-sm border border-border bg-doc-bg-input text-doc-text',
-              'hover:border-input hover:bg-doc-bg-hover',
-              'focus:outline-none focus:ring-1 focus:ring-ring',
+              'h-7 w-10 text-center text-sm border border-doc-border bg-doc-bg-input text-doc-text',
+              'hover:border-doc-border-input hover:bg-doc-bg-hover',
+              'focus:outline-none focus:ring-1 focus:ring-doc-primary',
               'rounded-none',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
@@ -314,8 +314,8 @@ export function FontSizePicker({
               onClick={() => handleSizeSelect(size)}
               className={cn(
                 'w-full px-3 py-1.5 text-sm text-left',
-                'hover:bg-muted',
-                size === currentValue && 'bg-muted font-medium'
+                'hover:bg-doc-bg-hover',
+                size === currentValue && 'bg-doc-bg-subtle font-medium'
               )}
               role="option"
               aria-selected={size === currentValue}
@@ -331,7 +331,7 @@ export function FontSizePicker({
         variant="ghost"
         size="icon-sm"
         className={cn(
-          'h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/80 rounded-l-none',
+          'h-7 w-7 text-doc-text-muted hover:text-doc-text hover:bg-doc-bg-hover rounded-l-none',
           disabled && 'opacity-30 cursor-not-allowed'
         )}
         onMouseDown={handleIncrease}

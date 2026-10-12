@@ -44,7 +44,7 @@ export interface ColorPickerProps {
   splitButton?: boolean;
   /**
    * Initial "last picked" color used by the apply half before the user picks
-   * anything. Defaults: text â†’ red, highlight â†’ yellow, border â†’ black.
+   * anything. Defaults: text â†?red, highlight â†?yellow, border â†?black.
    */
   defaultColor?: ColorValue | string;
 }
@@ -263,7 +263,7 @@ function isLightColor(hex: string): boolean {
   const r = parseInt(h.slice(0, 2), 16);
   const g = parseInt(h.slice(2, 4), 16);
   const b = parseInt(h.slice(4, 6), 16);
-  // Perceived luminance â€” threshold at ~90% white
+  // Perceived luminance â€?threshold at ~90% white
   return (r * 299 + g * 587 + b * 114) / 1000 > 230;
 }
 
@@ -391,7 +391,7 @@ export function ColorPicker({
   const [applyHovered, setApplyHovered] = useState(false);
   const [arrowHovered, setArrowHovered] = useState(false);
   const [customHex, setCustomHex] = useState('');
-  // Word-style: a sensible default until the user picks something â€” red for
+  // Word-style: a sensible default until the user picks something â€?red for
   // font color, yellow for highlight, black for border. The swatch still
   // mirrors the selection's actual color when one is set; this is just the
   // fallback for uncolored selections.
@@ -426,7 +426,7 @@ export function ColorPicker({
   );
 
   // The swatch shows the last picked color (or the mode default if nothing
-  // has been picked yet). It does NOT follow the cursor / selection â€” Word's
+  // has been picked yet). It does NOT follow the cursor / selection â€?Word's
   // behavior is: pick once, the swatch stays put while you move around and
   // click apply on multiple selections. The dropdown's "selected cell"
   // indicator separately reflects the selection's actual color (driven by
@@ -473,7 +473,7 @@ export function ColorPicker({
     [mode, onChange]
   );
 
-  // Auto / "no color" intentionally does NOT update pickedColor â€” clearing
+  // Auto / "no color" intentionally does NOT update pickedColor â€?clearing
   // a color isn't a "color choice" the apply button should remember.
   const handleAutomatic = useCallback(() => {
     if (mode === 'highlight') {
@@ -495,7 +495,7 @@ export function ColorPicker({
     }
   }, [mode, customHex, onChange]);
 
-  // Click on the "apply" half â€” apply the last picked color (or seeded default).
+  // Click on the "apply" half â€?apply the last picked color (or seeded default).
   const handleApplyLastColor = useCallback(() => {
     if (disabled) return;
     onChange?.(pickedColor);

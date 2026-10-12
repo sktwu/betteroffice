@@ -3,4 +3,4 @@
 '@betteroffice/docx-react': minor
 ---
 
-Adds BetterOffice theme system: pure-function color generation from `{ primary, neutral }` seed. Generates 40+ `--doc-*` tokens for light and dark modes using OKLCH color space. Includes React integration with `BetterOfficeThemeProvider` and hooks (`useTheme()`, `useSetMode()`). Complete Playground demo app for theme development and testing.
+Adds `@betteroffice/theme`: light and dark `--doc-*` tokens from a `{ primary, neutral }` seed, optional semantic colors, and per-token `overrides`. `createBetterOfficeThemeCss` emits only `--doc-*`. `@betteroffice/docx-react` adds `BetterOfficeThemeProvider` and theme hooks. Pass `mode` to `colorMode`. Opt-in.
