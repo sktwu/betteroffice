@@ -16,6 +16,10 @@
       "types": "./dist/en.d.mts",
       "import": "./dist/en.mjs"
     },
+    "./zh-CN": {
+      "types": "./dist/zh-CN.d.mts",
+      "import": "./dist/zh-CN.mjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [

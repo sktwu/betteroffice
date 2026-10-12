@@ -18,6 +18,10 @@ export type {
   DocxParagraphIdentitySnapshot,
 } from '@betteroffice/docx/yrs';
 
+// Theme system
+export { BetterOfficeThemeProvider, useTheme, useSetMode, useThemeTokens } from './theme'
+export type { IBetterOfficeThemeProviderProps, IBetterOfficeThemeContextValue, IBetterOfficeThemeSeed, IBetterOfficeThemeTokens } from './theme'
+
 // Main editor contract
 export {
   DocxEditor,

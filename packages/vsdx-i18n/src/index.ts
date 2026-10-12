@@ -1,9 +1,11 @@
 import enJson from '../en.json';
+import zhCNJson from '../zh-CN.json';
 
 export type LocaleStrings = typeof en;
-export type LocaleCode = 'en';
+export type LocaleCode = 'en' | 'zh-CN';
 export const en = enJson;
-export const locales: Record<LocaleCode, PartialLocaleStrings> = { en };
+export const zhCN: PartialLocaleStrings = zhCNJson;
+export const locales: Record<LocaleCode, PartialLocaleStrings> = { en, 'zh-CN': zhCN };
 
 export type DeepPartial<T> = { [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K] | null };
 export type PartialLocaleStrings = DeepPartial<LocaleStrings> & { _lang?: LocaleCode | (string & {}) };

@@ -42,6 +42,7 @@ crates/docx-edit/tests/fixtures/alternate-main-part.*.png
 /gate.sh
 /gate2.sh
 .gitnexus
+openspec
 
 .xwin-cache
 
