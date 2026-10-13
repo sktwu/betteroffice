@@ -19,6 +19,11 @@ import {
   representsUnit,
   useToolbarOverflow,
 } from '../../../../../shared/react-toolbar/useToolbarOverflow';
+import {
+  portalChromeClassName,
+  useThemeChromeDark,
+} from '../../../../../shared/theme-chrome/ThemeChromeContext';
+import { chrome } from '../../../../../shared/theme-chrome/tokens';
 import { pptxCommandController } from '../../commands/createPptxCommandStore';
 import { useCommandChromeRef, usePptxCommands } from '../../commands/hooks';
 import { useTranslation } from '../../i18n';
@@ -274,6 +279,7 @@ export function ToolbarOverflow({
 export function LegacyToolbarContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const registry = useOverflowRegistry();
+  const isDark = useThemeChromeDark();
   const unitRef = useRef<HTMLSpanElement>(null);
   const popupRef = useRef<HTMLDivElement>(null);
   const chromeRef = useCommandChromeRef();
@@ -360,6 +366,7 @@ export function LegacyToolbarContent({ children }: { children: ReactNode }) {
             role="dialog"
             aria-label={label}
             tabIndex={-1}
+            className={portalChromeClassName(isDark)}
             onKeyDown={(event) => {
               if (event.key !== 'Escape') return;
               event.preventDefault();
@@ -385,7 +392,7 @@ export function LegacyToolbarContent({ children }: { children: ReactNode }) {
               border: `1px solid ${toolbarColors.border}`,
               borderRadius: 8,
               background: toolbarColors.surface,
-              boxShadow: '0 4px 16px rgba(60, 64, 67, 0.24)',
+              boxShadow: `0 4px 16px ${chrome.shadow}`,
               boxSizing: 'border-box',
               outline: 'none',
             }}

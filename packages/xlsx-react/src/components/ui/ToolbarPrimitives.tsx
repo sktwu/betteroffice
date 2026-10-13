@@ -2,17 +2,19 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import type { OverflowMenuEntry } from '../../../../../shared/react-toolbar/OverflowMenu';
 import { useRovingFocus } from '../../../../../shared/react-toolbar/useRovingFocus';
+import { chrome } from '../../../../../shared/theme-chrome/tokens';
 import { useOverflowSource } from '../toolbar/overflowRegistry';
 
 export const toolbarColors = {
-  text: '#3c4043',
-  muted: '#5f6368',
-  disabled: '#9aa0a6',
-  hover: '#e2e7ef',
-  active: '#d3e3fd',
-  border: '#c7cacf',
-  surface: '#ffffff',
-  rail: '#edf2fa',
+  text: chrome.text,
+  muted: chrome.muted,
+  disabled: chrome.disabled,
+  hover: chrome.hover,
+  active: chrome.activeBg,
+  activeFg: chrome.activeFg,
+  border: chrome.border,
+  surface: chrome.surface,
+  rail: chrome.rail,
 };
 
 const baseButtonStyle: CSSProperties = {
@@ -46,7 +48,11 @@ function interactiveButtonStyle(
       : hovered && !disabled
       ? toolbarColors.hover
       : 'transparent',
-    color: disabled ? toolbarColors.disabled : toolbarColors.text,
+    color: disabled
+      ? toolbarColors.disabled
+      : active
+        ? toolbarColors.activeFg
+        : toolbarColors.text,
     cursor: disabled ? 'default' : 'pointer',
     opacity: disabled ? 0.48 : 1,
     ...style,

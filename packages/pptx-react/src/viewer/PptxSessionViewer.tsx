@@ -2,6 +2,10 @@ import { paintSlide, sizeCanvasForSlide } from '@betteroffice/pptx';
 import type { PresentationFrame } from '@betteroffice/pptx';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, KeyboardEvent } from 'react';
+import { themedRootClassName } from '../../../../shared/theme-chrome/colorMode';
+import { ThemeChromeProvider } from '../../../../shared/theme-chrome/ThemeChromeContext';
+import { chrome } from '../../../../shared/theme-chrome/tokens';
+import { useIsDark } from '../../../../shared/theme-chrome/useIsDark';
 import type { PptxWorkerViewerProps } from '../PptxEditor';
 import { createPptxCommandController } from '../commands/createPptxCommandStore';
 import type { PptxCommandBinding } from '../commands/createPptxCommandStore';
@@ -18,6 +22,7 @@ import { useSessionPresentation, type ViewerSession } from './useSessionPresenta
 
 export function PptxSessionViewer(props: PptxWorkerViewerProps) {
   const { t } = useTranslation();
+  const isDark = useIsDark(props.colorMode ?? 'light');
   const rootRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLElement>(null);
@@ -156,8 +161,9 @@ export function PptxSessionViewer(props: PptxWorkerViewerProps) {
     if (run?.show(run.active + 1 + (previous ? -1 : 1))) focus();
   };
   return (
+    <ThemeChromeProvider isDark={isDark}>
     <PptxCommandContext.Provider value={commands.store}>
-      <div ref={rootRef} className={props.className} style={styles.root}>
+      <div ref={rootRef} className={themedRootClassName(props.className, isDark)} style={styles.root}>
         {props.showToolbar !== false && props.toolbar != null ? (
           <div style={styles.toolbarShell}>
             <EditorChromeContext.Provider value>
@@ -174,7 +180,7 @@ export function PptxSessionViewer(props: PptxWorkerViewerProps) {
               return (
                 <button type="button" key={slide.id} data-slide-index={index}
                   aria-current={index === run.active ? 'page' : undefined}
-                  style={{ ...styles.slideButton, border: index === run.active ? '2px solid #325ee6' : '2px solid transparent' }}
+                  style={{ ...styles.slideButton, border: index === run.active ? `2px solid ${chrome.primary}` : '2px solid transparent' }}
                   onClick={() => { if (run.show(index + 1)) focus(); }}>
                   <span style={styles.slideNumber}>{index + 1}</span>
                   <span style={styles.slidePreview}>
@@ -204,6 +210,7 @@ export function PptxSessionViewer(props: PptxWorkerViewerProps) {
         ) : null}
       </div>
     </PptxCommandContext.Provider>
+    </ThemeChromeProvider>
   );
 }
 
@@ -251,23 +258,133 @@ function download(bytes: Uint8Array, name: string): void {
 }
 
 const styles: Record<string, CSSProperties> = {
-  root: { display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 480, overflow: 'hidden',
-    color: '#172033', background: '#f3f5f8', fontFamily: 'ui-sans-serif, system-ui, sans-serif' },
-  toolbarShell: { display: 'flex', alignItems: 'center', flex: '0 0 auto', padding: '4px 0 5px', background: '#ffffff', borderBottom: '1px solid #e2e8f0' },
+  root: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%',
+    height: '100%',
+    minHeight: 480,
+    overflow: 'hidden',
+    color: 'var(--doc-text, #172033)',
+    background: chrome.page,
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+  },
+  toolbarShell: {
+    display: 'flex',
+    alignItems: 'center',
+    flex: '0 0 auto',
+    padding: '4px 0 5px',
+    background: chrome.surface,
+    borderBottom: `1px solid ${chrome.border}`,
+  },
   workspace: { display: 'flex', flex: 1, minHeight: 0 },
-  slideStrip: { width: 184, padding: '14px 10px', overflowY: 'auto', background: '#eef1f5', borderRight: '1px solid #d8dee9', boxSizing: 'border-box' },
-  slideButton: { display: 'flex', alignItems: 'flex-start', gap: 7, width: '100%', marginBottom: 12, padding: 4, borderRadius: 5, background: 'transparent', cursor: 'pointer' },
-  slideNumber: { width: 18, flex: '0 0 auto', paddingTop: 3, fontSize: 11, color: '#647087', textAlign: 'right' },
-  slidePreview: { position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 132, aspectRatio: '16 / 9', padding: 8,
-    overflow: 'hidden', background: '#ffffff', boxSizing: 'border-box', boxShadow: '0 1px 4px rgba(20, 31, 50, 0.16)' },
-  slideTitle: { fontSize: 9, lineHeight: 1.25, color: '#39445a', textAlign: 'center' },
-  stage: { position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, minHeight: 0, outline: 'none', overflow: 'hidden' },
-  canvasHost: { display: 'flex', flex: 1, minHeight: 0, alignItems: 'center', justifyContent: 'center', width: '100%', overflow: 'auto' },
-  canvas: { display: 'block', flex: '0 0 auto', background: '#fff', boxShadow: '0 8px 32px rgba(27, 39, 61, 0.2)', touchAction: 'none' },
-  notesPanel: { flex: '0 0 auto', display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 14px 10px', background: '#ffffff', borderTop: '1px solid #e2e8f0' },
-  notesLabel: { fontSize: 11, fontWeight: 650, color: '#647087', textTransform: 'uppercase', letterSpacing: '0.02em' },
-  notesTextarea: { width: '100%', height: 64, resize: 'vertical', border: '1px solid #d8dee9', borderRadius: 6, padding: '6px 8px',
-    font: '13px ui-sans-serif, system-ui, sans-serif', color: '#172033', boxSizing: 'border-box', outline: 'none' },
-  empty: { margin: 'auto', color: '#6b7587', fontSize: 14 },
-  error: { position: 'absolute', left: 16, right: 16, bottom: 14, padding: '9px 12px', color: '#8b1e2d', background: '#fff0f2', border: '1px solid #efb8c0', borderRadius: 6, fontSize: 12 },
+  slideStrip: {
+    width: 184,
+    padding: '14px 10px',
+    overflowY: 'auto',
+    background: 'var(--doc-bg-subtle, #eef1f5)',
+    borderRight: `1px solid ${chrome.border}`,
+    boxSizing: 'border-box',
+  },
+  slideButton: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 7,
+    width: '100%',
+    marginBottom: 12,
+    padding: 4,
+    borderRadius: 5,
+    background: 'transparent',
+    cursor: 'pointer',
+  },
+  slideNumber: {
+    width: 18,
+    flex: '0 0 auto',
+    paddingTop: 3,
+    fontSize: 11,
+    color: chrome.muted,
+    textAlign: 'right',
+  },
+  slidePreview: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 132,
+    aspectRatio: '16 / 9',
+    padding: 8,
+    overflow: 'hidden',
+    background: chrome.surface,
+    boxSizing: 'border-box',
+    boxShadow: `0 1px 4px ${chrome.shadow}`,
+  },
+  slideTitle: { fontSize: 9, lineHeight: 1.25, color: chrome.muted, textAlign: 'center' },
+  stage: {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
+    outline: 'none',
+    overflow: 'hidden',
+  },
+  canvasHost: {
+    display: 'flex',
+    flex: 1,
+    minHeight: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    overflow: 'auto',
+  },
+  canvas: {
+    display: 'block',
+    flex: '0 0 auto',
+    background: '#fff',
+    boxShadow: `0 8px 32px ${chrome.shadow}`,
+    touchAction: 'none',
+  },
+  notesPanel: {
+    flex: '0 0 auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    padding: '8px 14px 10px',
+    background: chrome.surface,
+    borderTop: `1px solid ${chrome.border}`,
+  },
+  notesLabel: {
+    fontSize: 11,
+    fontWeight: 650,
+    color: chrome.muted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.02em',
+  },
+  notesTextarea: {
+    width: '100%',
+    height: 64,
+    resize: 'vertical',
+    border: `1px solid ${chrome.border}`,
+    borderRadius: 6,
+    padding: '6px 8px',
+    font: '13px ui-sans-serif, system-ui, sans-serif',
+    color: 'var(--doc-text, #172033)',
+    background: chrome.surface,
+    boxSizing: 'border-box',
+    outline: 'none',
+  },
+  empty: { margin: 'auto', color: chrome.muted, fontSize: 14 },
+  error: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 14,
+    padding: '9px 12px',
+    color: 'var(--doc-error, #8b1e2d)',
+    background: 'var(--doc-error-bg, #fff0f2)',
+    border: '1px solid var(--doc-error, #efb8c0)',
+    borderRadius: 6,
+    fontSize: 12,
+  },
 };

@@ -37,6 +37,12 @@ import type {
   TextStylePatch,
 } from '@betteroffice/pptx';
 import type { Translations } from '@betteroffice/pptx-i18n';
+import type { ColorMode } from '../../../shared/theme-chrome/colorMode';
+import { themedRootClassName } from '../../../shared/theme-chrome/colorMode';
+import { resolveCssColor } from '../../../shared/theme-chrome/resolveCssColor';
+import { ThemeChromeProvider } from '../../../shared/theme-chrome/ThemeChromeContext';
+import { chrome } from '../../../shared/theme-chrome/tokens';
+import { useIsDark } from '../../../shared/theme-chrome/useIsDark';
 import { LocaleProvider, useTranslation } from './i18n';
 import { ProposalsPanel } from './components/ProposalsPanel';
 import { ProposalCanvasOverlay, ProposalCanvasToolbar, ProposalNotesDiff, useProposalCanvas } from './components/ProposalCanvas';
@@ -256,6 +262,8 @@ export interface PptxEditorProps extends PptxEditorPluginProps {
   toolbar?: ReactNode;
   /** Shows the toolbar region; defaults to true. */
   showToolbar?: boolean;
+  /** Editor chrome color mode; the editor owns the `.dark` class. Defaults to `'light'`. */
+  colorMode?: ColorMode;
 }
 
 /** @experimental */
@@ -536,6 +544,7 @@ export function PptxEditorContent({
   readOnly = false,
   toolbar,
   showToolbar = true,
+  colorMode = 'light',
   i18n,
   plugins,
   pluginGrants,
@@ -547,6 +556,7 @@ export function PptxEditorContent({
   onWorkerReady?: (api: PptxWorkerEditorApi) => void;
 }) {
   const { t } = useTranslation();
+  const isDark = useIsDark(colorMode);
   const decodeImageError = t('errors.decodeSlideImage');
   const collaborationClientId = collaboration?.clientId ?? clientId;
   const collaborationInitialUpdate = collaboration?.initialUpdate;
@@ -2859,7 +2869,7 @@ export function PptxEditorContent({
     ) : null;
 
   const editor = (
-    <div ref={rootRef} className={className} style={styles.root}>
+    <div ref={rootRef} className={themedRootClassName(className, isDark)} style={styles.root}>
       {toolbarRegion}
       <input
         ref={pictureInputRef}
@@ -3160,7 +3170,11 @@ export function PptxEditorContent({
       ) : null}
     </div>
   );
-  return <PptxCommandContext.Provider value={commandStore}>{editor}</PptxCommandContext.Provider>;
+  return (
+    <ThemeChromeProvider isDark={isDark}>
+      <PptxCommandContext.Provider value={commandStore}>{editor}</PptxCommandContext.Provider>
+    </ThemeChromeProvider>
+  );
 }
 
 function ProposalsButton({
@@ -3418,7 +3432,11 @@ export function SelectionOverlay({
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
     sizeCanvasForSlide(canvas, frame, dpr, scale);
-    paintSelection(ctx, frame, selection, dpr, scale, caretVisible);
+    const host = canvas.closest('.oox-root');
+    paintSelection(ctx, frame, selection, dpr, scale, caretVisible, {
+      wash: resolveCssColor(chrome.selection, host),
+      caret: resolveCssColor(chrome.primary, host),
+    });
   }, [caretVisible, frame, scale, selection]);
 
   return <canvas ref={canvasRef} style={styles.canvasOverlay} aria-hidden="true" />;
@@ -3586,7 +3604,11 @@ export function paintSelection(
   selection: PptxTextSelection | null,
   dpr: number,
   scale: number,
-  caretVisible = true
+  caretVisible = true,
+  colors: { wash: string; caret: string } = {
+    wash: 'rgba(59, 130, 246, 0.26)',
+    caret: '#1d4ed8',
+  }
 ): void {
   if (!selection) return;
   const textBox = frame.primitives.find(
@@ -3601,7 +3623,7 @@ export function paintSelection(
   ctx.save();
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
   if (start !== end) {
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.26)';
+    ctx.fillStyle = colors.wash;
     for (const line of textBox.lines) {
       const lineStart = Math.max(start, line.start);
       const lineEnd = Math.min(end, line.end);
@@ -3619,7 +3641,7 @@ export function paintSelection(
     ];
     if (line) {
       const x = caretX(line, start);
-      ctx.fillStyle = '#1d4ed8';
+      ctx.fillStyle = colors.caret;
       ctx.fillRect(x, line.y, 1.5, line.height);
     }
   }
@@ -3654,8 +3676,8 @@ const styles: Record<string, CSSProperties> = {
     height: '100%',
     minHeight: 480,
     overflow: 'hidden',
-    color: '#172033',
-    background: '#f3f5f8',
+    color: 'var(--doc-text, #172033)',
+    background: chrome.page,
     fontFamily: 'ui-sans-serif, system-ui, sans-serif',
   },
   toolbarShell: {
@@ -3663,8 +3685,8 @@ const styles: Record<string, CSSProperties> = {
     alignItems: 'center',
     flex: '0 0 auto',
     padding: '4px 0 5px',
-    background: '#ffffff',
-    borderBottom: '1px solid #e2e8f0',
+    background: chrome.surface,
+    borderBottom: `1px solid ${chrome.border}`,
   },
   toolbar: {
     flex: '1 1 auto',
@@ -3685,11 +3707,18 @@ const styles: Record<string, CSSProperties> = {
     width: 184,
     padding: '14px 10px',
     overflowY: 'auto',
-    background: '#eef1f5',
-    borderRight: '1px solid #d8dee9',
+    background: 'var(--doc-bg-subtle, #eef1f5)',
+    borderRight: `1px solid ${chrome.border}`,
     boxSizing: 'border-box',
   },
-  slideNumber: { width: 18, flex: '0 0 auto', paddingTop: 3, fontSize: 11, color: '#647087', textAlign: 'right' },
+  slideNumber: {
+    width: 18,
+    flex: '0 0 auto',
+    paddingTop: 3,
+    fontSize: 11,
+    color: chrome.muted,
+    textAlign: 'right',
+  },
   slidePreview: {
     position: 'relative',
     display: 'flex',
@@ -3699,11 +3728,11 @@ const styles: Record<string, CSSProperties> = {
     aspectRatio: '16 / 9',
     padding: 8,
     overflow: 'hidden',
-    background: '#ffffff',
+    background: chrome.surface,
     boxSizing: 'border-box',
-    boxShadow: '0 1px 4px rgba(20, 31, 50, 0.16)',
+    boxShadow: `0 1px 4px ${chrome.shadow}`,
   },
-  slideTitle: { fontSize: 9, lineHeight: 1.25, color: '#39445a', textAlign: 'center' },
+  slideTitle: { fontSize: 9, lineHeight: 1.25, color: chrome.muted, textAlign: 'center' },
   thumbnailCanvas: { display: 'block', maxWidth: '100%', height: 'auto' },
   thumbnailPresence: {
     position: 'absolute',
@@ -3747,16 +3776,16 @@ const styles: Record<string, CSSProperties> = {
     width: HANDLE_SIZE,
     height: HANDLE_SIZE,
     borderRadius: '50%',
-    border: '1px solid #2563eb',
-    background: '#ffffff',
-    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.35)',
+    border: `1px solid ${chrome.primary}`,
+    background: chrome.surface,
+    boxShadow: `0 1px 2px ${chrome.shadow}`,
     boxSizing: 'border-box',
     touchAction: 'none',
   },
   shapeSelection: {
     position: 'absolute',
     zIndex: 3,
-    border: '2px solid #2563eb',
+    border: `2px solid ${chrome.primary}`,
     boxSizing: 'border-box',
     boxShadow: '0 0 0 1px rgba(255, 255, 255, 0.9)',
     pointerEvents: 'none',
@@ -3806,8 +3835,8 @@ const styles: Record<string, CSSProperties> = {
   },
   textBoxPreview: {
     position: 'absolute',
-    border: '1.5px dashed #1a73e8',
-    background: 'rgba(26, 115, 232, 0.08)',
+    border: `1.5px dashed ${chrome.primary}`,
+    background: chrome.selection,
     boxSizing: 'border-box',
     pointerEvents: 'none',
   },
@@ -3817,13 +3846,13 @@ const styles: Record<string, CSSProperties> = {
     flexDirection: 'column',
     gap: 4,
     padding: '8px 14px 10px',
-    background: '#ffffff',
-    borderTop: '1px solid #e2e8f0',
+    background: chrome.surface,
+    borderTop: `1px solid ${chrome.border}`,
   },
   notesLabel: {
     fontSize: 11,
     fontWeight: 650,
-    color: '#647087',
+    color: chrome.muted,
     textTransform: 'uppercase',
     letterSpacing: '0.02em',
   },
@@ -3831,16 +3860,28 @@ const styles: Record<string, CSSProperties> = {
     width: '100%',
     height: 64,
     resize: 'vertical',
-    border: '1px solid #d8dee9',
+    border: `1px solid ${chrome.border}`,
     borderRadius: 6,
     padding: '6px 8px',
     font: '13px ui-sans-serif, system-ui, sans-serif',
-    color: '#172033',
+    color: 'var(--doc-text, #172033)',
+    background: chrome.surface,
     boxSizing: 'border-box',
     outline: 'none',
   },
-  empty: { margin: 'auto', color: '#6b7587', fontSize: 14 },
-  error: { position: 'absolute', left: 16, right: 16, bottom: 14, padding: '9px 12px', color: '#8b1e2d', background: '#fff0f2', border: '1px solid #efb8c0', borderRadius: 6, fontSize: 12 },
+  empty: { margin: 'auto', color: chrome.muted, fontSize: 14 },
+  error: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 14,
+    padding: '9px 12px',
+    color: 'var(--doc-error, #8b1e2d)',
+    background: 'var(--doc-error-bg, #fff0f2)',
+    border: '1px solid var(--doc-error, #efb8c0)',
+    borderRadius: 6,
+    fontSize: 12,
+  },
   hiddenFileInput: {
     position: 'absolute',
     width: 1,
@@ -3862,8 +3903,8 @@ const styles: Record<string, CSSProperties> = {
     height: 30,
     border: 0,
     borderRadius: 15,
-    background: '#1a73e8',
-    color: '#ffffff',
+    background: chrome.primary,
+    color: 'var(--doc-on-primary, #ffffff)',
     font: '600 13px ui-sans-serif, system-ui, sans-serif',
     cursor: 'pointer',
   },
@@ -3908,7 +3949,7 @@ function slideButton(active: boolean): CSSProperties {
     width: '100%',
     marginBottom: 12,
     padding: 4,
-    border: active ? '2px solid #325ee6' : '2px solid transparent',
+    border: active ? `2px solid ${chrome.primary}` : '2px solid transparent',
     borderRadius: 5,
     background: 'transparent',
     cursor: 'pointer',

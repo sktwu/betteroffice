@@ -20,6 +20,11 @@ import {
   representsUnit,
   useToolbarOverflow,
 } from '../../../../../shared/react-toolbar/useToolbarOverflow';
+import {
+  portalChromeClassName,
+  useThemeChromeDark,
+} from '../../../../../shared/theme-chrome/ThemeChromeContext';
+import { chrome } from '../../../../../shared/theme-chrome/tokens';
 import { xlsxCommandController } from '../../commands/createXlsxCommandStore';
 import { useXlsxCommands } from '../../commands/hooks';
 import { useTranslation } from '../../i18n';
@@ -318,6 +323,7 @@ const PANEL_FOCUSABLE =
 export function ToolbarLegacyContent({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const registry = useContext(ToolbarOverflowContext);
+  const isDark = useThemeChromeDark();
   const unitRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -373,6 +379,7 @@ export function ToolbarLegacyContent({ children }: { children: ReactNode }) {
             ref={panelRef}
             role="dialog"
             aria-label={label}
+            className={portalChromeClassName(isDark)}
             onKeyDown={(event) => {
               if (event.key !== 'Escape') return;
               event.preventDefault();
@@ -398,7 +405,7 @@ export function ToolbarLegacyContent({ children }: { children: ReactNode }) {
               border: `1px solid ${toolbarColors.border}`,
               borderRadius: 8,
               background: toolbarColors.surface,
-              boxShadow: '0 4px 16px rgba(60, 64, 67, 0.24)',
+              boxShadow: `0 4px 16px ${chrome.shadow}`,
               boxSizing: 'border-box',
             }}
           />,

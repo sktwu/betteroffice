@@ -11,18 +11,24 @@ import {
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useRovingFocus } from '../../../../../shared/react-toolbar/useRovingFocus';
+import {
+  portalChromeClassName,
+  useThemeChromeDark,
+} from '../../../../../shared/theme-chrome/ThemeChromeContext';
+import { chrome } from '../../../../../shared/theme-chrome/tokens';
 import { useCommandChromeRef } from '../../commands/hooks';
 import { useOverflowRegistry, useOverflowSource } from '../toolbar/overflowRegistry';
 
 export const toolbarColors = {
-  text: '#3c4043',
-  muted: '#5f6368',
-  disabled: '#9aa0a6',
-  hover: '#e2e7ef',
-  active: '#d3e3fd',
-  border: '#c7cacf',
-  surface: '#ffffff',
-  rail: '#edf2fa',
+  text: chrome.text,
+  muted: chrome.muted,
+  disabled: chrome.disabled,
+  hover: chrome.hover,
+  active: chrome.activeBg,
+  activeFg: chrome.activeFg,
+  border: chrome.border,
+  surface: chrome.surface,
+  rail: chrome.rail,
 };
 
 const baseButtonStyle: CSSProperties = {
@@ -56,7 +62,11 @@ export function interactiveButtonStyle(
       : hovered && !disabled
       ? toolbarColors.hover
       : 'transparent',
-    color: disabled ? toolbarColors.disabled : toolbarColors.text,
+    color: disabled
+      ? toolbarColors.disabled
+      : active
+        ? toolbarColors.activeFg
+        : toolbarColors.text,
     cursor: disabled ? 'default' : 'pointer',
     opacity: disabled ? 0.48 : 1,
     ...style,
@@ -293,6 +303,7 @@ export const ToolbarDropdownBase = forwardRef<DropdownHandle, ToolbarDropdownPro
       left: number;
       maxHeight: number;
     } | null>(null);
+    const isDark = useThemeChromeDark();
     const triggerRef = useRef<HTMLButtonElement>(null);
     const popupRef = useRef<HTMLDivElement>(null);
     const chromeRef = useCommandChromeRef();
@@ -437,6 +448,7 @@ export const ToolbarDropdownBase = forwardRef<DropdownHandle, ToolbarDropdownPro
               aria-label={title}
               aria-orientation={kind === 'menu' ? 'vertical' : undefined}
               tabIndex={-1}
+              className={portalChromeClassName(isDark)}
               onKeyDown={onPopupKeyDown}
               onBlur={(event) => {
                 if (kind !== 'dialog') return;
@@ -465,7 +477,7 @@ export const ToolbarDropdownBase = forwardRef<DropdownHandle, ToolbarDropdownPro
                 border: `1px solid ${toolbarColors.border}`,
                 borderRadius: 8,
                 background: toolbarColors.surface,
-                boxShadow: '0 4px 16px rgba(60, 64, 67, 0.24)',
+                boxShadow: `0 4px 16px ${chrome.shadow}`,
                 boxSizing: 'border-box',
                 outline: 'none',
               }}

@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { CSSProperties, Ref } from 'react';
+import { chrome } from '../../../../../shared/theme-chrome/tokens';
 import { useTranslation } from '../../i18n';
 
 /** The editor's formula input, shared with whichever chrome renders the formula bar. */
@@ -29,7 +30,7 @@ const styles: Record<string, CSSProperties> = {
     flex: '1 1 320px',
     minWidth: 240,
     padding: '0 6px',
-    borderRight: '1px solid rgba(226, 232, 240, 0.9)',
+    borderRight: `1px solid ${chrome.border}`,
   },
   nameBox: {
     appearance: 'none',
@@ -37,13 +38,13 @@ const styles: Record<string, CSSProperties> = {
     height: 28,
     flex: '0 0 auto',
     boxSizing: 'border-box',
-    border: '1px solid #e2e8f0',
+    border: `1px solid ${chrome.border}`,
     borderRadius: 6,
-    background: '#f8fafc',
-    color: '#0f172a',
+    background: 'var(--doc-bg-subtle, #f8fafc)',
+    color: 'var(--doc-text, #0f172a)',
     font: '600 12px ui-monospace, SFMono-Regular, Menlo, monospace',
     textAlign: 'center',
-    outlineColor: '#2563eb',
+    outlineColor: chrome.primary,
   },
   mark: {
     display: 'grid',
@@ -51,7 +52,7 @@ const styles: Record<string, CSSProperties> = {
     width: 20,
     height: 28,
     flex: '0 0 auto',
-    color: '#64748b',
+    color: chrome.muted,
     font: 'italic 700 12px Georgia, serif',
     userSelect: 'none',
   },
@@ -61,15 +62,15 @@ const styles: Record<string, CSSProperties> = {
     minWidth: 140,
     height: 28,
     boxSizing: 'border-box',
-    border: '1px solid #e2e8f0',
+    border: `1px solid ${chrome.border}`,
     borderRadius: 6,
     padding: '0 8px',
-    background: '#ffffff',
-    color: '#0f172a',
+    background: chrome.surface,
+    color: 'var(--doc-text, #0f172a)',
     font: '13px ui-sans-serif, system-ui, sans-serif',
-    outlineColor: '#2563eb',
+    outlineColor: chrome.primary,
   },
-};
+}
 
 /** @experimental */
 export interface FormulaBarProps {

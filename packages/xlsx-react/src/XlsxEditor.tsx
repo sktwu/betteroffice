@@ -64,6 +64,11 @@ import type {
   CollaborationReplica,
 } from '@betteroffice/xlsx/collaboration';
 import type { Translations } from '@betteroffice/xlsx-i18n';
+import type { ColorMode } from '../../../shared/theme-chrome/colorMode';
+import { themedRootClassName } from '../../../shared/theme-chrome/colorMode';
+import { ThemeChromeProvider } from '../../../shared/theme-chrome/ThemeChromeContext';
+import { chrome } from '../../../shared/theme-chrome/tokens';
+import { useIsDark } from '../../../shared/theme-chrome/useIsDark';
 import { LocaleProvider, useTranslation } from './i18n';
 import {
   createXlsxCommandController,
@@ -262,6 +267,8 @@ export interface XlsxEditorProps extends XlsxEditorPluginProps {
   toolbar?: React.ReactNode;
   /** `false` hides the toolbar region, whatever `toolbar` is. */
   showToolbar?: boolean;
+  /** Editor chrome color mode; the editor owns the `.dark` class. Defaults to `'light'`. */
+  colorMode?: ColorMode;
 }
 
 /** @experimental */
@@ -294,7 +301,6 @@ interface EditState {
 
 const COL_W = 96;
 const ROW_H = 24;
-const BRAND = '#217346';
 const DEFAULT_XLSX_TOOLBAR_HEIGHT = 87;
 const MAX_OVERLAY_MERGED_RANGES = 1024;
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -517,9 +523,9 @@ const xlsxToolbarStyles: Record<string, React.CSSProperties> = {
     flex: '0 0 auto',
     minHeight: DEFAULT_XLSX_TOOLBAR_HEIGHT,
     padding: '4px 0 5px',
-    borderBottom: '1px solid #e2e8f0',
-    background: '#ffffff',
-    color: '#0f172a',
+    borderBottom: `1px solid ${chrome.border}`,
+    background: chrome.surface,
+    color: 'var(--doc-text, #0f172a)',
     boxSizing: 'border-box',
   },
   rail: {
@@ -529,7 +535,7 @@ const xlsxToolbarStyles: Record<string, React.CSSProperties> = {
     margin: '0 8px',
     padding: '2px 8px',
     borderRadius: 4,
-    background: '#ffffff',
+    background: chrome.surface,
     boxSizing: 'border-box',
     overflowX: 'auto',
     overflowY: 'hidden',
@@ -539,7 +545,7 @@ const xlsxToolbarStyles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: 1,
     padding: '0 6px',
-    borderRight: '1px solid rgba(226, 232, 240, 0.9)',
+    borderRight: `1px solid ${chrome.border}`,
     flex: '0 0 auto',
   },
   host: {
@@ -558,8 +564,8 @@ const xlsxToolbarStyles: Record<string, React.CSSProperties> = {
     marginLeft: -3,
     padding: '0 4px',
     borderRadius: 8,
-    background: '#0f172a',
-    color: '#ffffff',
+    background: 'var(--doc-text, #0f172a)',
+    color: 'var(--doc-on-primary, #ffffff)',
     fontSize: 10,
     fontWeight: 700,
     lineHeight: 1,
@@ -622,12 +628,14 @@ function XlsxEditorContent({
   readOnly = false,
   toolbar,
   showToolbar = true,
+  colorMode = 'light',
   i18n,
   plugins,
   pluginGrants,
   onPluginError,
 }: XlsxEditorProps) {
   const { t } = useTranslation();
+  const isDark = useIsDark(colorMode);
   const collaborationEnabled = collaboration !== undefined;
   const collaborationClientId = collaboration?.clientId;
   const collaborationInitialUpdate = collaboration?.initialUpdate;
@@ -2460,7 +2468,7 @@ function XlsxEditorContent({
   const editor = (
     <div
       ref={rootRef}
-      className={className}
+      className={themedRootClassName(className, isDark)}
       role="application"
       aria-label={t('editor.appLabel')}
       style={{
@@ -2470,8 +2478,8 @@ function XlsxEditorContent({
         width: '100%',
         height: '100%',
         minWidth: 0,
-        color: '#202124',
-        background: '#ffffff',
+        color: 'var(--doc-text, #202124)',
+        background: chrome.surface,
         fontFamily: 'ui-sans-serif, system-ui, sans-serif',
       }}
     >
@@ -2566,8 +2574,8 @@ function XlsxEditorContent({
                       width: scaledSelectionRect.w,
                       height: scaledSelectionRect.h,
                       boxSizing: 'border-box',
-                      border: `1px solid ${BRAND}`,
-                      background: 'rgba(33, 115, 70, 0.12)',
+                      border: `1px solid ${chrome.primary}`,
+                      background: chrome.selection,
                     }}
                   />
                 )}
@@ -2589,9 +2597,9 @@ function XlsxEditorContent({
                       width: chartOutlineRect.w,
                       height: chartOutlineRect.h,
                       boxSizing: 'border-box',
-                      border: `2px solid ${BRAND}`,
-                      boxShadow: '0 1px 6px rgba(0, 0, 0, 0.25)',
-                      background: chartDragOffset ? 'rgba(33, 115, 70, 0.08)' : 'transparent',
+                      border: `2px solid ${chrome.primary}`,
+                      boxShadow: `0 1px 6px ${chrome.shadow}`,
+                      background: chartDragOffset ? chrome.selection : 'transparent',
                     }}
                   />
                 )}
@@ -2604,7 +2612,7 @@ function XlsxEditorContent({
                       width: scaledFocusRect.w,
                       height: scaledFocusRect.h,
                       boxSizing: 'border-box',
-                      border: `2px solid ${BRAND}`,
+                      border: `2px solid ${chrome.primary}`,
                     }}
                   />
                 )}
@@ -2658,10 +2666,10 @@ function XlsxEditorContent({
                       width: scaledEditRect.w,
                       height: scaledEditRect.h,
                       boxSizing: 'border-box',
-                      border: `2px solid ${BRAND}`,
+                      border: `2px solid ${chrome.primary}`,
                       padding: '0 3px',
                       font: `${13 * zoom}px system-ui, sans-serif`,
-                      background: '#ffffff',
+                      background: chrome.surface,
                       pointerEvents: 'auto',
                       outline: 'none',
                     }}
@@ -2749,8 +2757,8 @@ function XlsxEditorContent({
             display: 'flex',
             gap: 2,
             padding: '4px 6px',
-            borderTop: '1px solid #e0e0e0',
-            background: '#fafafa',
+            borderTop: `1px solid ${chrome.border}`,
+            background: 'var(--doc-bg-subtle, #fafafa)',
             overflowX: 'auto',
           }}
         >
@@ -2766,9 +2774,10 @@ function XlsxEditorContent({
                   border: 'none',
                   padding: '4px 12px',
                   cursor: 'pointer',
-                  borderBottom: active ? `2px solid ${BRAND}` : '2px solid transparent',
+                  borderBottom: active ? `2px solid ${chrome.primary}` : '2px solid transparent',
                   fontWeight: active ? 600 : 400,
-                  background: active ? '#ffffff' : 'transparent',
+                  background: active ? chrome.surface : 'transparent',
+                  color: 'var(--doc-text, inherit)',
                 }}
               >
                 {name}
@@ -2781,11 +2790,13 @@ function XlsxEditorContent({
   );
 
   return (
-    <XlsxCommandContext.Provider value={commandController.store}>
-      <EditorChromeContext.Provider value={true}>
-        <FormulaBarContext.Provider value={formulaBar}>{editor}</FormulaBarContext.Provider>
-      </EditorChromeContext.Provider>
-    </XlsxCommandContext.Provider>
+    <ThemeChromeProvider isDark={isDark}>
+      <XlsxCommandContext.Provider value={commandController.store}>
+        <EditorChromeContext.Provider value={true}>
+          <FormulaBarContext.Provider value={formulaBar}>{editor}</FormulaBarContext.Provider>
+        </EditorChromeContext.Provider>
+      </XlsxCommandContext.Provider>
+    </ThemeChromeProvider>
   );
 }
 

@@ -13,12 +13,12 @@ const MIN_SIZE: Record<DockPlacement, number> = { left: 160, right: 160, bottom:
 export const NARROW_EDITOR_WIDTH = 640;
 
 const colors = {
-  surface: '#ffffff',
-  border: '#e2e8f0',
-  text: '#172033',
-  muted: '#647087',
-  selected: '#e6f4ea',
-  primary: '#217346',
+  surface: 'var(--doc-surface, #ffffff)',
+  border: 'var(--doc-border, #e2e8f0)',
+  text: 'var(--doc-text, #172033)',
+  muted: 'var(--doc-text-muted, #647087)',
+  selected: 'var(--doc-toggle-active-bg, #e6f4ea)',
+  primary: 'var(--doc-primary, #217346)',
 };
 
 /** The panel size a dock gets: its preference, clamped to at most 40% of the workspace. */

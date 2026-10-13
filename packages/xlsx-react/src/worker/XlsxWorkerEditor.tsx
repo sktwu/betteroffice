@@ -40,8 +40,11 @@ import {
   useEditableSessionWorkbook, type EditableSessionWorkbookProps, type EditableWorkbookSession,
 } from './useEditableSessionWorkbook';
 import { WorkerPaintSource, type WorkerPaintRequest, type WorkerPaintResult } from './WorkerPaintSource';
+import { themedRootClassName } from '../../../../shared/theme-chrome/colorMode';
+import { ThemeChromeProvider } from '../../../../shared/theme-chrome/ThemeChromeContext';
+import { chrome } from '../../../../shared/theme-chrome/tokens';
+import { useIsDark } from '../../../../shared/theme-chrome/useIsDark';
 
-const BRAND = '#217346';
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const visuallyHidden: CSSProperties = {
   position: 'absolute', width: 1, height: 1, margin: -1, padding: 0, border: 0,
@@ -101,6 +104,7 @@ function revealAxis(position: number, size: number, frozen: boolean, scroll: num
 
 export function XlsxWorkerEditor(props: EditableSessionWorkbookProps) {
   const { t } = useTranslation();
+  const isDark = useIsDark(props.colorMode ?? 'light');
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1527,12 +1531,13 @@ export function XlsxWorkerEditor(props: EditableSessionWorkbookProps) {
     placement={placement} activations={pluginHost.activations.filter((activation) => activation.plugin.panel?.placement === placement)}
     available={dockArea} /> : null;
 
-  return <XlsxCommandContext.Provider value={commands.store}>
+  return <ThemeChromeProvider isDark={isDark}>
+  <XlsxCommandContext.Provider value={commands.store}>
     <EditorChromeContext.Provider value={true}>
       <FormulaBarContext.Provider value={formulaBar}>
-        <div ref={rootRef} className={props.className} role="application" aria-label={t('editor.appLabel')}
+        <div ref={rootRef} className={themedRootClassName(props.className, isDark)} role="application" aria-label={t('editor.appLabel')}
           style={{ position: 'relative', display: 'flex', flexDirection: 'column', width: '100%', height: '100%',
-            minWidth: 0, color: '#202124', background: '#ffffff', fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
+            minWidth: 0, color: 'var(--doc-text, #202124)', background: chrome.surface, fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
           {toolbar != null && <div data-testid="xlsx-toolbar" style={{ flex: '0 0 auto' }}>{toolbar}</div>}
           <div ref={dockAreaRef} data-testid="xlsx-workspace" style={{ position: 'relative', display: 'flex', flex: 1, minWidth: 0, minHeight: 0 }}>
             {renderDock('left')}
@@ -1565,10 +1570,10 @@ export function XlsxWorkerEditor(props: EditableSessionWorkbookProps) {
                     layerRef={pluginHost.overlayLayerRef} width={(frame?.width ?? 0) * paintedZoom} height={(frame?.height ?? 0) * paintedZoom} />}
                   <div data-testid="xlsx-overlay-host" style={{ position: 'absolute', top: 0, left: 0, width: 0, height: 0, pointerEvents: 'none' }}>
                     {selectionRect && !selectedChart && <div data-testid="xlsx-selection"
-                      style={outline(selectionRect, `1px solid ${BRAND}`, 'rgba(33, 115, 70, 0.12)')} />}
-                    {focusRect && !selectedChart && !editing && <div style={outline(focusRect, `2px solid ${BRAND}`)} />}
+                      style={outline(selectionRect, `1px solid ${chrome.primary}`, chrome.selection)} />}
+                    {focusRect && !selectedChart && !editing && <div style={outline(focusRect, `2px solid ${chrome.primary}`)} />}
                     {chartRect && <div data-testid="xlsx-chart-selection" data-chart-id={selectedChart?.id} aria-hidden
-                      style={{ ...outline(chartRect, `2px solid ${BRAND}`),
+                      style={{ ...outline(chartRect, `2px solid ${chrome.primary}`),
                         transform: `translate(${chartOffset?.x ?? 0}px, ${chartOffset?.y ?? 0}px)`, boxShadow: '0 1px 6px rgba(0, 0, 0, 0.25)' }} />}
                     {editing && editRect && <input ref={attachCellInput} data-testid="xlsx-cell-editor"
                       value={(composition.current?.source === 'cell' ? editorInputRef.current?.value : undefined) ?? editing.value}
@@ -1591,7 +1596,7 @@ export function XlsxWorkerEditor(props: EditableSessionWorkbookProps) {
                         if (suppressBlur.current) { suppressBlur.current = false; return; }
                         commitDraft('cell');
                       }}
-                      style={{ ...outline(editRect, `2px solid ${BRAND}`, '#ffffff'), padding: '0 3px',
+                      style={{ ...outline(editRect, `2px solid ${chrome.primary}`, '#ffffff'), padding: '0 3px',
                         font: `${13 * paintedZoom}px system-ui, sans-serif`, pointerEvents: 'auto', outline: 'none' }} />}
                   </div>
                 </div>
@@ -1614,16 +1619,18 @@ export function XlsxWorkerEditor(props: EditableSessionWorkbookProps) {
           {error && <div data-testid="xlsx-error" role="alert" style={{ position: 'absolute', inset: 0, display: 'grid',
             placeItems: 'center', padding: 16, textAlign: 'center', color: '#b00020' }}>{t('editor.openError')}: {error.message}</div>}
           {sheets.length > 0 && <div data-testid="xlsx-sheet-tabs" role="tablist" aria-label={t('editor.sheetTabsLabel')}
-            style={{ display: 'flex', gap: 2, padding: '4px 6px', borderTop: '1px solid #e0e0e0', background: '#fafafa', overflowX: 'auto' }}>
+            style={{ display: 'flex', gap: 2, padding: '4px 6px', borderTop: `1px solid ${chrome.border}`, background: 'var(--doc-bg-subtle, #fafafa)', overflowX: 'auto' }}>
             {sheets.map((sheet, index) => <button key={sheet.id} role="tab" aria-selected={index === active} disabled={Boolean(error)}
               onClick={() => navigate(index, selectionAt({ row: 0, col: 0 }))}
-              style={{ border: 'none', padding: '4px 12px', cursor: 'pointer', background: index === active ? '#ffffff' : 'transparent',
-                borderBottom: index === active ? `2px solid ${BRAND}` : '2px solid transparent', fontWeight: index === active ? 600 : 400 }}>
+              style={{ border: 'none', padding: '4px 12px', cursor: 'pointer', background: index === active ? chrome.surface : 'transparent',
+                color: 'var(--doc-text, inherit)',
+                borderBottom: index === active ? `2px solid ${chrome.primary}` : '2px solid transparent', fontWeight: index === active ? 600 : 400 }}>
               {sheet.name}
             </button>)}
           </div>}
         </div>
       </FormulaBarContext.Provider>
     </EditorChromeContext.Provider>
-  </XlsxCommandContext.Provider>;
+  </XlsxCommandContext.Provider>
+  </ThemeChromeProvider>;
 }

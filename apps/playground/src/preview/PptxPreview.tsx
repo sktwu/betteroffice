@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { PptxEditor } from '@betteroffice/pptx-react'
+import { useTheme } from '@betteroffice/docx-react'
 import type { PptxFontFace } from '@betteroffice/pptx'
 import { loadBundledFontBytes, resolveLastResortFace, resolveMetricCompatFace } from '@betteroffice/fonts'
 import FormatPreview, { type IPreviewActions } from './FormatPreview'
 import { FORMATS, type ILoadedFile } from './formats'
-
-const NOT_THEMED = '此编辑器暂不跟随主题'
 
 let fontsPromise: Promise<PptxFontFace[]> | null = null
 
@@ -31,6 +30,7 @@ interface IPptxPreviewProps {
 }
 
 function PptxStage({ file, fonts, actions }: { file: ILoadedFile; fonts: PptxFontFace[]; actions: IPreviewActions }) {
+  const { mode } = useTheme()
   const bytes = useMemo(() => file.bytes.slice(), [file])
   return (
     <PptxEditor
@@ -38,6 +38,7 @@ function PptxStage({ file, fonts, actions }: { file: ILoadedFile; fonts: PptxFon
       file={bytes}
       fileName={file.name}
       fonts={fonts}
+      colorMode={mode}
       onError={(cause) => actions.reportError(cause.message)}
     />
   )
@@ -59,7 +60,7 @@ export default function PptxPreview({ file, onFile }: IPptxPreviewProps) {
   }, [])
 
   return (
-    <FormatPreview format={FORMATS.pptx} file={file} onFile={onFile} notice={NOT_THEMED}>
+    <FormatPreview format={FORMATS.pptx} file={file} onFile={onFile}>
       {(loaded, actions) =>
         fontError ? (
           <p className="format-message">Failed to load fonts: {fontError}</p>

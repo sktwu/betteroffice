@@ -20,11 +20,14 @@ import { EditorChromeContext } from '../components/EditorToolbarContext';
 import { FormulaBarContext } from '../components/toolbar/FormulaBar';
 import type { FormulaBarBinding } from '../components/toolbar/FormulaBar';
 import { useTranslation } from '../i18n';
+import { themedRootClassName } from '../../../../shared/theme-chrome/colorMode';
+import { ThemeChromeProvider } from '../../../../shared/theme-chrome/ThemeChromeContext';
+import { chrome } from '../../../../shared/theme-chrome/tokens';
+import { useIsDark } from '../../../../shared/theme-chrome/useIsDark';
 import { deriveLimits, expandRangeToMergedCells, positionAtPoint, scaledRect } from './sessionGeometry';
 import { useSessionWorkbook } from './useSessionWorkbook';
 import type { ViewerSession, ViewerSurface } from './useSessionWorkbook';
 
-const BRAND = '#217346';
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 const visuallyHidden: CSSProperties = {
   position: 'absolute', width: 1, height: 1, margin: -1, padding: 0, border: 0,
@@ -57,6 +60,7 @@ function download(bytes: Uint8Array, name: string): void {
 
 export function XlsxSessionViewer(props: XlsxWorkerViewerProps) {
   const { t } = useTranslation();
+  const isDark = useIsDark(props.colorMode ?? 'light');
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -367,12 +371,13 @@ export function XlsxSessionViewer(props: XlsxWorkerViewerProps) {
   };
 
   return (
+    <ThemeChromeProvider isDark={isDark}>
     <XlsxCommandContext.Provider value={commands.store}>
       <EditorChromeContext.Provider value={true}>
         <FormulaBarContext.Provider value={formulaBar}>
-          <div ref={rootRef} className={props.className} role="application" aria-label={t('editor.appLabel')}
+          <div ref={rootRef} className={themedRootClassName(props.className, isDark)} role="application" aria-label={t('editor.appLabel')}
             style={{ position: 'relative', display: 'flex', flexDirection: 'column', width: '100%',
-              height: '100%', minWidth: 0, color: '#202124', background: '#ffffff',
+              height: '100%', minWidth: 0, color: 'var(--doc-text, #202124)', background: chrome.surface,
               fontFamily: 'ui-sans-serif, system-ui, sans-serif' }}>
             {toolbarContent != null && <div data-testid="xlsx-toolbar" style={{ flex: '0 0 auto' }}>{toolbarContent}</div>}
             <div data-testid="xlsx-workspace" style={{ position: 'relative', display: 'flex', flex: 1, minWidth: 0, minHeight: 0 }}>
@@ -389,10 +394,10 @@ export function XlsxSessionViewer(props: XlsxWorkerViewerProps) {
                     <div data-testid="xlsx-overlay-host" style={{ position: 'absolute', top: 0, left: 0,
                       width: 0, height: 0, pointerEvents: 'none' }}>
                       {selectionRect && !selectedChart && <div data-testid="xlsx-selection"
-                        style={outline(selectionRect, `1px solid ${BRAND}`, 'rgba(33, 115, 70, 0.12)')} />}
-                      {focusRect && !selectedChart && <div style={outline(focusRect, `2px solid ${BRAND}`)} />}
+                        style={outline(selectionRect, `1px solid ${chrome.primary}`, chrome.selection)} />}
+                      {focusRect && !selectedChart && <div style={outline(focusRect, `2px solid ${chrome.primary}`)} />}
                       {chartRect && <div data-testid="xlsx-chart-selection" data-chart-id={selectedChart} aria-hidden
-                        style={{ ...outline(chartRect, `2px solid ${BRAND}`, 'transparent'), boxShadow: '0 1px 6px rgba(0, 0, 0, 0.25)' }} />}
+                        style={{ ...outline(chartRect, `2px solid ${chrome.primary}`, 'transparent'), boxShadow: `0 1px 6px ${chrome.shadow}` }} />}
                     </div>
                   </div>
                 </div>
@@ -411,17 +416,18 @@ export function XlsxSessionViewer(props: XlsxWorkerViewerProps) {
                 <div key={`${index}:${chart.label}`} style={visuallyHidden} role="img" aria-label={chart.label} />)}
             </>}
             {error && <div data-testid="xlsx-error" role="alert" style={{ position: 'absolute', inset: 0,
-              display: 'grid', placeItems: 'center', padding: 16, textAlign: 'center', color: '#b00020' }}>
+              display: 'grid', placeItems: 'center', padding: 16, textAlign: 'center', color: 'var(--doc-error, #b00020)' }}>
               {t('editor.openError')}: {error}
             </div>}
             {sheets.length > 0 && <div data-testid="xlsx-sheet-tabs" role="tablist" aria-label={t('editor.sheetTabsLabel')}
-              style={{ display: 'flex', gap: 2, padding: '4px 6px', borderTop: '1px solid #e0e0e0',
-                background: '#fafafa', overflowX: 'auto' }}>
+              style={{ display: 'flex', gap: 2, padding: '4px 6px', borderTop: `1px solid ${chrome.border}`,
+                background: 'var(--doc-bg-subtle, #fafafa)', overflowX: 'auto' }}>
               {sheets.map((sheet, index) => <button key={sheet.id} role="tab" aria-selected={index === active}
                 onClick={() => { setSelectedChart(null); void run?.show(index); }}
                 style={{ border: 'none', padding: '4px 12px', cursor: 'pointer',
-                  borderBottom: index === active ? `2px solid ${BRAND}` : '2px solid transparent',
-                  fontWeight: index === active ? 600 : 400, background: index === active ? '#ffffff' : 'transparent' }}>
+                  borderBottom: index === active ? `2px solid ${chrome.primary}` : '2px solid transparent',
+                  fontWeight: index === active ? 600 : 400, background: index === active ? chrome.surface : 'transparent',
+                  color: 'var(--doc-text, inherit)' }}>
                 {sheet.name}
               </button>)}
             </div>}
@@ -429,5 +435,6 @@ export function XlsxSessionViewer(props: XlsxWorkerViewerProps) {
         </FormulaBarContext.Provider>
       </EditorChromeContext.Provider>
     </XlsxCommandContext.Provider>
+    </ThemeChromeProvider>
   );
 }
